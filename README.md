@@ -1,14 +1,18 @@
 # The Machine Read the Archive
 ### An interactive Twine assignment on how machines shape identity
 
+## ▶ [Launch the app](https://acsuarez84.github.io/Image-Analysis-Demo/)
+
+**Live tool:** <https://acsuarez84.github.io/Image-Analysis-Demo/> — open it in any
+browser. No install, no login. Your work saves in your own browser automatically.
+
+---
+
 A browser-based, movable **Twine-style story map**. Fifty photographs from a road
 trip — an aquarium, a holiday stop, and a pilgrimage through the sites of the
 U.S. Civil Rights Movement in Alabama — were described by an AI. Students use
 those photographs as raw material to **argue how machines shape identity**,
 read through **feminist and intersectional** theory.
-
-> **Open [`index.html`](index.html) in any browser.** No install, no server.
-> Everything you make is saved in your browser automatically.
 
 ---
 
