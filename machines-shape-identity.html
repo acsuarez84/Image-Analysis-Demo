@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Machine Read the Archive — An Interactive Twine</title>
+<style>
+  :root{
+    --bg:#0d0d0f; --panel:#151519; --ink:#ece9e4; --muted:#9a978f;
+    --line:#2a2a30; --accent:#c9a227; --accent2:#6f8faf; --danger:#b0553f;
+    --tag:#242430;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
+    font-family:"Iowan Old Style",Georgia,"Times New Roman",serif;line-height:1.65;}
+  a{color:inherit}
+  .wrap{max-width:820px;margin:0 auto;padding:0 20px 120px;}
+  header.top{position:sticky;top:0;z-index:20;background:rgba(13,13,15,.94);
+    backdrop-filter:blur(6px);border-bottom:1px solid var(--line);}
+  .top-inner{max-width:820px;margin:0 auto;display:flex;gap:8px;flex-wrap:wrap;
+    align-items:center;padding:10px 20px;}
+  .brand{font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);
+    margin-right:auto;font-family:ui-monospace,"SF Mono",Menlo,monospace;}
+  button.nav{background:var(--panel);color:var(--ink);border:1px solid var(--line);
+    padding:7px 12px;border-radius:2px;cursor:pointer;font-size:12px;letter-spacing:.06em;
+    text-transform:uppercase;font-family:ui-monospace,Menlo,monospace;}
+  button.nav:hover{border-color:var(--accent);color:var(--accent)}
+  .lenses{display:flex;gap:5px;flex-wrap:wrap}
+  .lensdot{width:10px;height:10px;border-radius:50%;border:1px solid var(--line);
+    background:transparent}
+  .lensdot.on{background:var(--accent);border-color:var(--accent)}
+
+  h1{font-size:34px;line-height:1.15;margin:38px 0 6px;font-weight:600;letter-spacing:-.01em}
+  h2{font-size:24px;margin:34px 0 8px;font-weight:600}
+  h3{font-size:16px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);
+    font-family:ui-monospace,Menlo,monospace;margin:26px 0 6px;font-weight:500}
+  .kicker{font-family:ui-monospace,Menlo,monospace;font-size:12px;letter-spacing:.22em;
+    text-transform:uppercase;color:var(--muted);margin-top:40px}
+  p{margin:14px 0}
+  .lede{font-size:19px;color:#d8d5cf}
+  blockquote{border-left:2px solid var(--accent);margin:20px 0;padding:4px 18px;
+    color:#cfc9be;font-style:italic}
+  blockquote cite{display:block;font-style:normal;font-size:13px;color:var(--muted);
+    margin-top:8px;font-family:ui-monospace,Menlo,monospace}
+  .plate{background:var(--panel);border:1px solid var(--line);border-radius:3px;
+    padding:16px 18px;margin:20px 0}
+  .plate .cap{font-family:ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--muted)}
+  .machine{border-left:3px solid var(--accent2);background:#12141a}
+  .machine .cap{color:var(--accent2)}
+  .prompt{border:1px dashed var(--accent);background:transparent}
+  .prompt .cap{color:var(--accent)}
+
+  .choices{margin:26px 0;display:flex;flex-direction:column;gap:10px}
+  .choice,.inlink{display:inline-block;text-align:left;background:var(--panel);
+    border:1px solid var(--line);color:var(--ink);padding:12px 16px;border-radius:3px;
+    cursor:pointer;font-family:inherit;font-size:16px;transition:.15s;width:100%}
+  .choice:hover{border-color:var(--accent);transform:translateX(3px)}
+  .choice .arrow{color:var(--accent);margin-right:10px}
+  .inlink{width:auto;padding:2px 7px;border-radius:2px;color:var(--accent);
+    border-color:var(--tag);font-size:inherit}
+  .inlink:hover{background:var(--accent);color:#111}
+  .visited-note{font-size:12px;color:var(--muted);font-family:ui-monospace,Menlo,monospace}
+
+  .tagrow{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+  .tag{background:var(--tag);border:1px solid var(--line);color:var(--muted);
+    font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:4px 9px;
+    border-radius:20px;font-family:ui-monospace,Menlo,monospace}
+
+  .gather{background:transparent;border:1px solid var(--accent);color:var(--accent);
+    padding:8px 14px;border-radius:2px;cursor:pointer;font-family:ui-monospace,Menlo,monospace;
+    font-size:12px;letter-spacing:.06em;text-transform:uppercase;margin-top:8px}
+  .gather:hover{background:var(--accent);color:#111}
+  .gather.done{opacity:.5;cursor:default}
+
+  label{display:block;font-family:ui-monospace,Menlo,monospace;font-size:12px;
+    letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:16px 0 5px}
+  input,textarea,select{width:100%;background:#0a0a0c;border:1px solid var(--line);
+    color:var(--ink);padding:10px 12px;border-radius:3px;font-family:inherit;font-size:15px}
+  textarea{min-height:90px;resize:vertical;line-height:1.5}
+  input:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent)}
+  .btnrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+  .btn{background:var(--accent);color:#111;border:none;padding:11px 18px;border-radius:3px;
+    cursor:pointer;font-family:ui-monospace,Menlo,monospace;font-size:13px;letter-spacing:.06em;
+    text-transform:uppercase;font-weight:600}
+  .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+  .btn.ghost:hover{border-color:var(--accent)}
+  .btn:hover{filter:brightness(1.08)}
+  .btn.warn{background:var(--danger);color:#fff}
+
+  .noteitem{border:1px solid var(--line);border-left:3px solid var(--accent);
+    background:var(--panel);padding:10px 12px;margin:8px 0;font-size:14px;position:relative}
+  .noteitem .src{font-family:ui-monospace,Menlo,monospace;font-size:10px;color:var(--muted);
+    text-transform:uppercase;letter-spacing:.1em;display:block;margin-bottom:4px}
+  .noteitem .del{position:absolute;top:8px;right:10px;cursor:pointer;color:var(--muted);
+    font-family:ui-monospace,Menlo,monospace;font-size:12px}
+  .noteitem .del:hover{color:var(--danger)}
+  .empty{color:var(--muted);font-style:italic}
+
+  .studentpassage{border:1px solid var(--line);border-left:3px solid var(--accent2);
+    background:var(--panel);padding:10px 12px;margin:8px 0}
+  .studentpassage b{color:var(--accent2)}
+  .studentpassage .mini{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--muted)}
+  .studentpassage .row{display:flex;gap:8px;margin-top:6px}
+  .studentpassage .row button{font-size:11px;padding:4px 8px}
+
+  hr.sep{border:none;border-top:1px solid var(--line);margin:34px 0}
+  .hidden{display:none}
+  .footer{margin-top:60px;color:var(--muted);font-size:13px;font-family:ui-monospace,Menlo,monospace}
+  .pill{display:inline-block;background:var(--tag);border:1px solid var(--line);
+    border-radius:20px;padding:2px 10px;font-size:11px;font-family:ui-monospace,Menlo,monospace;
+    color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+  code{background:#0a0a0c;border:1px solid var(--line);padding:1px 5px;border-radius:3px;
+    font-family:ui-monospace,Menlo,monospace;font-size:13px;color:var(--accent)}
+  .progressbar{height:3px;background:var(--line);border-radius:2px;overflow:hidden;margin:6px 0 0}
+  .progressbar > div{height:100%;background:var(--accent);width:0;transition:.3s}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-inner">
+    <span class="brand">The Machine Read the Archive</span>
+    <div class="lenses" id="lensDots" title="Theoretical lenses engaged"></div>
+    <button class="nav" onclick="go('start')">Story</button>
+    <button class="nav" onclick="go('notes')">Field Notes</button>
+    <button class="nav" onclick="go('builder')">Build</button>
+    <button class="nav" onclick="go('argue')">Argue</button>
+    <button class="nav" onclick="restart()">Restart</button>
+  </div>
+</header>
+
+<div class="wrap" id="stage"></div>
+
+<script>
+/* ============================================================
+   STATE + PERSISTENCE
+   ============================================================ */
+const LS = {
+  student:'msi_student_passages_v2',
+  notes:'msi_field_notes_v2',
+  argue:'msi_argument_v2',
+  progress:'msi_progress_v2'
+};
+const load = (k,f)=>{try{return JSON.parse(localStorage.getItem(k))??f}catch{return f}};
+const save = (k,v)=>localStorage.setItem(k,JSON.stringify(v));
+
+let state = load(LS.progress,{lenses:[],visited:[]});
+let notes = load(LS.notes,[]);
+let student = load(LS.student,{});   // id -> {title, body}
+let argument = load(LS.argue,{});
+
+const LENS_LIST = ['cyborg','intersection','algo','surveil','datafem','jimcode'];
+
+function markLens(id){ if(!state.lenses.includes(id)){state.lenses.push(id); save(LS.progress,state);} renderLensDots(); }
+function markVisited(id){ if(!state.visited.includes(id)){state.visited.push(id); save(LS.progress,state);} }
+function renderLensDots(){
+  document.getElementById('lensDots').innerHTML =
+    LENS_LIST.map(l=>`<span class="lensdot ${state.lenses.includes(l)?'on':''}" title="${LENS_META[l].name}"></span>`).join('');
+}
+
+/* ============================================================
+   THEORY REFERENCE (accurate short bios)
+   ============================================================ */
+const LENS_META = {
+  cyborg:{name:'The Cyborg', who:'Donna Haraway, “A Cyborg Manifesto” (1985)'},
+  intersection:{name:'Intersectionality', who:'Kimberlé Crenshaw (1989, 1991)'},
+  algo:{name:'Algorithms of Oppression', who:'Safiya Umoja Noble (2018)'},
+  surveil:{name:'Surveillance of Blackness', who:'Simone Browne, “Dark Matters” (2015)'},
+  datafem:{name:'Data Feminism', who:'D’Ignazio & Klein (2020)'},
+  jimcode:{name:'The New Jim Code', who:'Ruha Benjamin, “Race After Technology” (2019)'}
+};
+
+/* ============================================================
+   BUILT-IN PASSAGES
+   Body supports Twine link syntax:  [[Label->target]]  or  [[target]]
+   ============================================================ */
+const P = {};
+
+P.start = {title:'The Machine Read the Archive', body:`
+<p class="kicker">An interactive Twine · Feminist &amp; Intersectional Media Studies</p>
+<h1>The Machine Read the Archive</h1>
+<p class="lede">Fifty photographs sat in a folder. A machine opened them, looked, and wrote a story about what it saw — a road trip: an aquarium, a holiday hotel, and a pilgrimage through the sites of the U.S. Civil Rights Movement in Alabama.</p>
+<p>The photographs are of <em>you</em> — or people like you: a hand raising a phone toward a bronze Rosa Parks, a face reflected in the glass of a beluga tank, a person sleeping against a storefront that the machine noted, in its words, <em>“clinically.”</em></p>
+<p>Your assignment is not to grade the machine. It is to <strong>argue with it</strong> — to build your own branching story that uses these images to make a claim about <strong>how machines shape identity</strong>, read through feminist and intersectional theory. You will collect evidence into <span class="pill">Field Notes</span>, then <span class="pill">Build</span> your own passages and <span class="pill">Argue</span> a thesis.</p>
+<div class="plate prompt"><span class="cap">Before you begin</span>
+<p style="margin-bottom:0">Keep one question open the whole way through: <em>When a machine describes a body, whose vision is it using — and who gets to disagree?</em></p></div>
+<div class="choices">
+  <button class="choice" onclick="go('meta')"><span class="arrow">→</span>First, meet the machine that wrote the description</button>
+  <button class="choice" onclick="go('archive')"><span class="arrow">→</span>Go straight to the archive of images</button>
+  <button class="choice" onclick="go('about')"><span class="arrow">→</span>How this assignment works (for students &amp; instructors)</button>
+</div>`};
+
+P.meta = {title:'Meet the Machine', body:`
+<h3>Passage · The Reader</h3>
+<h2>A machine that sounds certain</h2>
+<p>The description you were handed was generated by an AI system — a machine trained on billions of images and captions scraped from the internet. It cannot see. It <em>predicts</em>. And yet it narrates with the calm authority of a museum plaque.</p>
+<div class="plate machine"><span class="cap">The machine wrote:</span>
+<p style="margin-bottom:0">“A beluga whale resting on a submerged log… the last one is almost a ghostly double-exposure with a reflection of a person’s face superimposed.”</p></div>
+<p>Notice what happened there. A human face appeared — reflected in aquarium glass — and the machine folded it into the whale, into scenery. The person became an artifact of the image rather than its subject. This is the small, ordinary way machines shape identity: by deciding what counts as a <em>subject</em> and what counts as <em>background</em>.</p>
+<div class="plate machine"><span class="cap">The machine also wrote:</span>
+<p style="margin-bottom:0">“…a person sleeping against a storefront window — a stark, unsentimental contrast…”</p></div>
+<p>An unhoused person, rendered as <em>contrast</em> — a compositional element in an argument about historical inequality. Accurate? Maybe. Neutral? Never. Every act of classification is a value judgment wearing the costume of description.</p>
+<p>Feminist theory has a name for the machine's trick: <strong>the view from nowhere</strong> — the pretense that a describer has no body, no position, no stake, and therefore sees objectively. You are going to challenge that pretense.</p>
+<div class="choices">
+  <button class="choice" onclick="go('archive')"><span class="arrow">→</span>Enter the archive and choose what to examine</button>
+  <button class="choice" onclick="go('lenshub')"><span class="arrow">→</span>Pick a theoretical lens first</button>
+</div>`};
+
+P.archive = {title:'The Archive', body:`
+<h3>Passage · The Archive</h3>
+<h2>What the machine sorted the fifty images into</h2>
+<p>The machine clustered the photographs. Clustering is never innocent — it decides what belongs with what. Choose a cluster to enter. Each holds an image you can interrogate and, if it's useful, <em>gather into your Field Notes</em> as evidence.</p>
+<div class="tagrow"><span class="tag">50 images</span><span class="tag">black &amp; white</span><span class="tag">machine-sorted</span></div>
+<div class="choices">
+  <button class="choice" onclick="go('image_church')"><span class="arrow">→</span><b>Sacred / Surveilled</b> — 16th Street Baptist Church, Birmingham</button>
+  <button class="choice" onclick="go('image_memorial')"><span class="arrow">→</span><b>The Named &amp; the Counted</b> — EJI Memorial for Peace and Justice</button>
+  <button class="choice" onclick="go('image_mother')"><span class="arrow">→</span><b>The Body in Chains</b> — bronze sculpture of an enslaved mother</button>
+  <button class="choice" onclick="go('image_bus')"><span class="arrow">→</span><b>The Machine of Refusal</b> — the restored Montgomery bus</button>
+  <button class="choice" onclick="go('image_selfie')"><span class="arrow">→</span><b>Face to Face</b> — a visitor beside the Rosa Parks statue</button>
+  <button class="choice" onclick="go('image_beluga')"><span class="arrow">→</span><b>Human / Animal / Machine</b> — the beluga and the reflected face</button>
+  <button class="choice" onclick="go('image_sidewalk')"><span class="arrow">→</span><b>“Unsentimental Contrast”</b> — a person sleeping on the street</button>
+</div>
+<hr class="sep">
+<div class="choices">
+  <button class="choice" onclick="go('lenshub')"><span class="arrow">◆</span>Choose / switch theoretical lens</button>
+</div>`};
+
+/* ---------- IMAGE-ANCHOR PASSAGES ---------- */
+function imgPassage({id,title,tags,machine,see,ask,gatherText,links}){
+  return {title, body:`
+  <h3>Image · ${title}</h3>
+  <div class="tagrow">${tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div>
+  <div class="plate machine"><span class="cap">How the machine described it</span><p style="margin-bottom:0">${machine}</p></div>
+  <p>${see}</p>
+  <div class="plate prompt"><span class="cap">Ask</span><p style="margin-bottom:0">${ask}</p></div>
+  ${gatherBtn(id,gatherText)}
+  <div class="choices" style="margin-top:24px">
+    ${links.map(l=>`<button class="choice" onclick="go('${l.t}')"><span class="arrow">→</span>${l.label}</button>`).join('')}
+    <button class="choice" onclick="go('archive')"><span class="arrow">←</span>Back to the archive</button>
+  </div>`};
+}
+function gatherBtn(id,text){
+  const already = notes.some(n=>n.id===id);
+  return `<button class="gather ${already?'done':''}" id="gb_${id}" onclick="gather('${id}','${escapeAttr(text)}')">
+    ${already?'✓ In your Field Notes':'+ Gather this as evidence'}</button>`;
+}
+const escapeAttr = s => s.replace(/'/g,"\\'").replace(/"/g,'&quot;');
+
+P.image_church = imgPassage({
+  id:'image_church', title:'Sacred / Surveilled',
+  tags:['Birmingham','1963 bombing','security cameras'],
+  machine:'“16th Street Baptist Church: exterior towers, the iconic cross-shaped marquee… This church was bombed in 1963, killing four girls.”',
+  see:'Look again at the marquee photo: a modern <strong>security camera</strong> is bolted to the brick beneath the cross. A site of anti-Black terror is now watched by a machine. The camera promises protection — but surveillance and protection have never meant the same thing for Black communities.',
+  ask:'When a machine “watches” a Black sacred space, is it guarding the congregation or archiving them? Who is the camera <em>for</em>?',
+  gatherText:'16th St. Baptist Church: a security camera under the cross — protection and surveillance blur at a site of anti-Black violence.',
+  links:[{t:'lens_surveil',label:'Read this through Simone Browne (surveillance of Blackness)'},{t:'lens_datafem',label:'Read this through Data Feminism (power & context)'}]
+});
+
+P.image_memorial = imgPassage({
+  id:'image_memorial', title:'The Named & the Counted',
+  tags:['Montgomery','EJI','lynching memorial','the archive'],
+  machine:'“Hanging corten-steel monuments engraved with county names and victims… a close-up of victim ‘Maceo Snipes, 07.18.1946’… the closing inscription ‘They are all honored here.’”',
+  see:'The memorial exists precisely because a machinery of record-keeping once refused to name these people — or named them only as statistics, as property, as “unknown.” The engraving of <em>Maceo Snipes</em> is a counter-data act: turning a body that a system tried to erase back into a name.',
+  ask:'Machines love to count. But counting can honor <em>or</em> flatten. What is the difference between the steel column that names Maceo Snipes and a spreadsheet cell that logs him?',
+  gatherText:'EJI Memorial: naming victims by name is a counter-archive against systems that recorded Black people as “unknown” or as property.',
+  links:[{t:'lens_datafem',label:'Read this through Data Feminism (missing data, whose counts)'},{t:'lens_jimcode',label:'Read this through the New Jim Code (encoded erasure)'}]
+});
+
+P.image_mother = imgPassage({
+  id:'image_mother', title:'The Body in Chains',
+  tags:['sculpture','enslavement','race + gender + class'],
+  machine:'“A bronze memorial sculpture of an enslaved mother in chains holding her child.”',
+  see:'The machine names three facts — enslaved, mother, chained — and moves on. But those three facts are not separable. Her oppression is not race <em>plus</em> gender <em>plus</em> the economics of slavery stacked in a list. It is all of them fused into a single lived condition the law built specifically for her.',
+  ask:'A single-axis machine would tag this image “race” or “gender” or “history.” What does it lose by refusing to hold all of them at once? Whose experience disappears in the gap?',
+  gatherText:'Enslaved-mother sculpture: race, gender, and class are fused, not additive — a textbook case for intersectionality.',
+  links:[{t:'lens_intersection',label:'Read this through Crenshaw (intersectionality)'},{t:'lens_cyborg',label:'Read this through Haraway (bodies & boundaries)'}]
+});
+
+P.image_bus = imgPassage({
+  id:'image_bus', title:'The Machine of Refusal',
+  tags:['Montgomery Bus Boycott','technology','1955'],
+  machine:'“A beautifully restored 1950s-era transit bus… almost certainly at the Rosa Parks Museum. From inside, showing the historic photo frieze above the seats.”',
+  see:'The bus is itself a <strong>machine that shaped identity</strong>: its rows were engineered to sort bodies by race. Segregation wasn’t only law — it was infrastructure, hardware, a seating chart enforced by a driver. Rosa Parks did not hack the software of Jim Crow; she refused the machine physically, with her body, in a seat.',
+  ask:'If a 1955 bus encoded racial hierarchy into steel and rules, what do <em>today’s</em> machines encode into code and defaults — and can you still refuse from a seat?',
+  gatherText:'The segregated bus: technology as infrastructure of identity; Jim Crow was hardware, and refusal was embodied.',
+  links:[{t:'lens_jimcode',label:'Read this through the New Jim Code (from bus to algorithm)'},{t:'lens_cyborg',label:'Read this through Haraway (human/machine boundary)'}]
+});
+
+P.image_selfie = imgPassage({
+  id:'image_selfie', title:'Face to Face',
+  tags:['Rosa Parks statue','the gaze','the phone'],
+  machine:'“A warm personal moment: someone sitting face-to-face with the Rosa Parks bronze bust as if in conversation… a hand raising a phone toward the statue.”',
+  see:'A living person and a bronze icon look at each other — and a <strong>phone</strong> (a machine, a camera, a network) mediates the encounter. The moment only becomes “real,” archivable, shareable, when a machine witnesses it. The device doesn’t just record the memory; it participates in shaping who the visitor becomes in relation to Parks.',
+  ask:'The camera turns a private moment of recognition into content. Does the machine deepen the visitor’s identification with Parks — or does it convert reverence into a performance for an algorithmic audience?',
+  gatherText:'Visitor + Rosa Parks statue + phone: the machine mediates identity, turning recognition into shareable, performed content.',
+  links:[{t:'lens_datafem',label:'Read this through Data Feminism (the body behind the lens)'},{t:'lens_cyborg',label:'Read this through Haraway (self merged with device)'}]
+});
+
+P.image_beluga = imgPassage({
+  id:'image_beluga', title:'Human / Animal / Machine',
+  tags:['aquarium','reflection','boundaries'],
+  machine:'“A ghostly double-exposure with a reflection of a person’s face superimposed” over a beluga whale behind glass.',
+  see:'In one frame: a captive animal, a pane of engineered glass, and a human face that the machine could not fully separate from either. Haraway would love this image. It is a cyborg image — the boundaries between human, animal, and apparatus dissolve, and the machine’s confusion <em>reveals</em> those boundaries were never as solid as we pretend.',
+  ask:'The machine treated the human face as part of the whale. What if that “error” is actually true — that our identities are already merged with the machines and enclosures we look through?',
+  gatherText:'Beluga + reflected human face: the machine fuses human, animal, and glass — a literal cyborg image collapsing identity boundaries.',
+  links:[{t:'lens_cyborg',label:'Read this through Haraway (the cyborg)'},{t:'lens_surveil',label:'Read this through Browne (who is captive, who watches)'}]
+});
+
+P.image_sidewalk = imgPassage({
+  id:'image_sidewalk', title:'“Unsentimental Contrast”',
+  tags:['Montgomery','present-day','class','composition'],
+  machine:'“A person sleeping against a storefront window — a stark, unsentimental contrast between the movement’s promises and present-day inequality still visible on the same streets.”',
+  see:'Here the machine turns a human being into a <strong>rhetorical device</strong> — a “contrast” that completes its essay about broken promises. The sleeping person has no name, no consent, no say. They are data conscripted into an argument. This is how machines shape identity at its coldest: by deciding whose suffering is <em>evidence</em> and whose is <em>subject</em>.',
+  ask:'Data Feminism asks us to make the invisible labor and the invisible bodies visible. What would it mean to refuse to use this person as a “contrast” at all?',
+  gatherText:'Sleeping unhoused person described as “unsentimental contrast”: the machine conscripts a nameless body as evidence in its own thesis.',
+  links:[{t:'lens_datafem',label:'Read this through Data Feminism (whose body is “data”)'},{t:'lens_intersection',label:'Read this through intersectionality (class + race + housing)'}]
+});
+
+/* ---------- LENS HUB + LENS PASSAGES ---------- */
+P.lenshub = {title:'Choose a Lens', body:`
+<h3>Passage · The Lenses</h3>
+<h2>Six ways to argue with the machine</h2>
+<p>A lens is not a decoration on your argument — it is the <em>engine</em> of it. Engage at least <strong>two</strong> to unlock the argument scaffold. Each dot in the header lights up as you go.</p>
+<div class="choices">
+  ${LENS_LIST.map(l=>`<button class="choice" onclick="go('lens_${l}')"><span class="arrow">◆</span><b>${LENS_META[l].name}</b> — ${LENS_META[l].who}</button>`).join('')}
+</div>
+<hr class="sep">
+<div class="choices">
+  <button class="choice" onclick="go('archive')"><span class="arrow">←</span>Back to the archive of images</button>
+  <button class="choice" onclick="go('argue')"><span class="arrow">✎</span>Go to the argument scaffold</button>
+</div>`};
+
+function lensPassage({id,name,who,idea,quote,cite,apply,image}){
+  return {title:name, body:`
+  <h3>Lens · ${name}</h3>
+  <h2>${name}</h2>
+  <p class="pill">${who}</p>
+  <p>${idea}</p>
+  <blockquote>${quote}<cite>${cite}</cite></blockquote>
+  <div class="plate prompt"><span class="cap">Apply it to the archive</span><p style="margin-bottom:0">${apply}</p></div>
+  <div class="choices" style="margin-top:22px">
+    <button class="choice" onclick="go('${image}')"><span class="arrow">→</span>Go to the image this lens fits best</button>
+    <button class="choice" onclick="go('lenshub')"><span class="arrow">◆</span>Choose another lens</button>
+    <button class="choice" onclick="go('builder')"><span class="arrow">✎</span>Start writing my own passage with this lens</button>
+  </div>`};
+}
+
+P.lens_cyborg = (function(){const p=lensPassage({
+  id:'cyborg',name:'The Cyborg',who:'Donna Haraway, “A Cyborg Manifesto,” 1985',
+  idea:'Haraway argues that identity is not natural or pure but <strong>constructed and hybrid</strong>. The cyborg — part organism, part machine — refuses the old dualisms (human/animal, human/machine, male/female) that were used to rank and dominate. To be a cyborg is to accept that we are <em>already</em> merged with our tools, and to use that fusion to imagine identities the old categories could not hold.',
+  quote:'“I would rather be a cyborg than a goddess.”',
+  cite:'Donna Haraway, A Cyborg Manifesto',
+  apply:'The machine could not separate the human face from the beluga and the glass. Argue that this is not a glitch but a <em>truth</em>: the visitor was already a cyborg — a self extended through camera, phone, and enclosure. What identities become possible when we stop pretending the human is separate from the machine?',
+  image:'image_beluga'});
+  const orig=p.body; p.body=orig; return p;})();
+
+P.lens_intersection = lensPassage({
+  id:'intersection',name:'Intersectionality',who:'Kimberlé Crenshaw, 1989 & 1991',
+  idea:'Crenshaw showed that systems of oppression — racism, sexism, classism — do not act one at a time. They <strong>intersect</strong>, producing experiences that single-axis thinking literally cannot see. A Black woman is not discriminated against “as a woman” <em>plus</em> “as a Black person”; she stands at an intersection where a specific, compounded harm occurs — and where legal and technical systems built around one axis leave her invisible.',
+  quote:'“Because the intersectional experience is greater than the sum of racism and sexism, any analysis that does not take intersectionality into account cannot sufficiently address the particular manner in which Black women are subordinated.”',
+  cite:'Kimberlé Crenshaw, “Demarginalizing the Intersection,” 1989',
+  apply:'A machine that tags images along one axis — “race” OR “gender” OR “class” — will misread the enslaved-mother sculpture and the sleeping person on the sidewalk. Argue how single-axis classification (the way most algorithms are built) reproduces exactly the erasure Crenshaw diagnosed.',
+  image:'image_mother'});
+
+P.lens_algo = lensPassage({
+  id:'algo',name:'Algorithms of Oppression',who:'Safiya Umoja Noble, 2018',
+  idea:'Noble demonstrates that search engines and ranking systems are not neutral mirrors of reality — they encode the racism and sexism of the data and the profit motives that built them. She calls it <strong>“technological redlining”</strong>: the way automated systems sort, rank, and misrepresent people of color, especially Black women, under a false banner of objectivity.',
+  quote:'“Algorithms of oppression… data discrimination is a real social problem.”',
+  cite:'Safiya Umoja Noble, Algorithms of Oppression, 2018',
+  apply:'The machine <em>ranked</em> these fifty images — it decided the aquarium was “a striking” highlight and the sleeping person was “contrast.” Argue that ranking is a political act: whose images get centered as beautiful, whose get instrumentalized, and what training data taught the machine that hierarchy?',
+  image:'image_sidewalk'});
+
+P.lens_surveil = lensPassage({
+  id:'surveil',name:'Surveillance of Blackness',who:'Simone Browne, “Dark Matters,” 2015',
+  idea:'Browne traces surveillance back through slavery — branding, lantern laws, the fugitive slave pass — to show that modern watching technologies are built on a long history of <strong>racializing surveillance</strong>: monitoring that produces race as a category and marks Blackness as something to be tracked. She also names <em>dark sousveillance</em> — the ways Black people watch back and evade the watchers.',
+  quote:'“Surveillance is nothing new to black folks. It is a fact of antiblackness.”',
+  cite:'Simone Browne, Dark Matters, 2015',
+  apply:'A security camera now hangs beneath the cross at 16th Street Baptist Church. Argue what it means that a site of anti-Black terror is folded into a modern surveillance network — and whether the AI reading these photos is itself an act of racializing surveillance.',
+  image:'image_church'});
+
+P.lens_datafem = lensPassage({
+  id:'datafem',name:'Data Feminism',who:'Catherine D’Ignazio & Lauren F. Klein, 2020',
+  idea:'Data Feminism offers principles for just data work: <strong>examine power, challenge it, elevate emotion and embodiment, rethink binaries, embrace pluralism, consider context, and make labor visible.</strong> Above all, it rejects the “<em>view from nowhere</em>” — the myth that data or descriptions come from no body and no position.',
+  quote:'“What is often computed as neutral is anything but. Data feminism begins by analyzing how power operates in the world.”',
+  cite:'D’Ignazio & Klein, Data Feminism, 2020',
+  apply:'The machine wrote from “nowhere” — no body, no stake, total confidence. Argue how a data-feminist reading would re-describe the sleeping person, or the visitor with the phone, by restoring context, consent, and the embodied position of whoever held the camera.',
+  image:'image_sidewalk'});
+
+P.lens_jimcode = lensPassage({
+  id:'jimcode',name:'The New Jim Code',who:'Ruha Benjamin, “Race After Technology,” 2019',
+  idea:'Benjamin coins the <strong>“New Jim Code”</strong>: the employment of new technologies that reflect and reproduce existing inequities but are promoted and perceived as more objective or progressive than the discriminatory systems of a previous era. Bias doesn’t disappear with automation — it gets <em>encoded</em>, hidden inside a veneer of neutral efficiency.',
+  quote:'“Racist robots… reflect the coded inequities of everyday life.”',
+  cite:'Ruha Benjamin, Race After Technology, 2019',
+  apply:'The 1955 bus sorted bodies by race with steel and rules. Argue the continuity Benjamin draws: from segregated hardware to today’s algorithms that sort people by proxy (zip code, name, face) while claiming to be colorblind. What is the modern “seating chart,” and where is it hidden?',
+  image:'image_bus'});
+
+/* ---------- ABOUT ---------- */
+P.about = {title:'How this works', body:`
+<h3>Guide · Students & Instructors</h3>
+<h2>How to use this Twine</h2>
+<p><strong>The task.</strong> Build a short branching story (in the <span class="pill">Build</span> tab) that uses the images and at least two theoretical lenses to argue a claim about <em>how machines shape identity</em>. Then complete the <span class="pill">Argue</span> scaffold to state your thesis in prose.</p>
+<h3>The moves</h3>
+<p>1. <strong>Read &amp; gather.</strong> Move through the archive. On any image, click <em>“+ Gather this as evidence”</em> to send it to your Field Notes.<br>
+2. <strong>Apply lenses.</strong> Visit the lens hub. Engaging two lenses lights the dots in the header and unlocks the argument scaffold.<br>
+3. <strong>Build.</strong> Write your own passages using Twine link syntax — <code>[[Label-&gt;target_id]]</code> — to branch. Play your story from inside the tool.<br>
+4. <strong>Argue &amp; export.</strong> Fill the thesis scaffold, then export your work to a <code>.twee</code> file you can open in the real <a href="https://twinery.org" target="_blank" rel="noopener">Twinery</a> editor, or copy your write-up.</p>
+<h3>Assessment ideas</h3>
+<p>Grade on: (a) accurate use of at least two frameworks; (b) a claim that is <em>arguable</em>, not just descriptive; (c) evidence drawn from specific images; (d) a branching structure where the <em>choices themselves</em> carry meaning (e.g., letting the reader choose whose perspective narrates).</p>
+<div class="plate"><span class="cap">Everything you write is saved in this browser</span>
+<p style="margin-bottom:0">Field notes, passages, and your thesis persist via local storage. Use <strong>Export</strong> to back them up or hand them in. <em>Restart</em> clears the story path but keeps your writing until you clear it.</p></div>
+<div class="choices"><button class="choice" onclick="go('start')"><span class="arrow">←</span>Back to the beginning</button></div>`};
+
+/* ============================================================
+   FIELD NOTES
+   ============================================================ */
+function gather(id,text){
+  if(notes.some(n=>n.id===id)) return;
+  notes.push({id,text,when:Date.now()});
+  save(LS.notes,notes);
+  const b=document.getElementById('gb_'+id);
+  if(b){b.classList.add('done');b.textContent='✓ In your Field Notes';}
+}
+function delNote(id){ notes=notes.filter(n=>n.id!==id); save(LS.notes,notes); go('notes'); }
+
+P.notes = {special:true};
+function renderNotes(){
+  const list = notes.length? notes.map(n=>`
+    <div class="noteitem"><span class="src">${(P[n.id]?.title)||n.id}</span>
+      <span class="del" onclick="delNote('${n.id}')">✕ remove</span>${n.text}</div>`).join('')
+    : `<p class="empty">No evidence gathered yet. Visit the <b>archive</b> and click “+ Gather this as evidence” on any image.</p>`;
+  return `
+  <h3>Workspace · Field Notes</h3>
+  <h2>Your evidence</h2>
+  <p>These are the images you flagged as evidence. Pull from them when you build passages and write your thesis.</p>
+  ${list}
+  <div class="choices" style="margin-top:24px">
+    <button class="choice" onclick="go('archive')"><span class="arrow">→</span>Gather more from the archive</button>
+    <button class="choice" onclick="go('argue')"><span class="arrow">✎</span>Use these in the argument scaffold</button>
+  </div>`;
+}
+
+/* ============================================================
+   STORY BUILDER
+   ============================================================ */
+P.builder = {special:true};
+function renderBuilder(){
+  const list = Object.keys(student).length? Object.entries(student).map(([id,p])=>`
+    <div class="studentpassage">
+      <b>:: ${p.title}</b> <span class="mini">id: ${id}</span>
+      <div class="mini" style="margin-top:4px;color:var(--muted)">${(p.body||'').slice(0,120).replace(/</g,'&lt;')}${p.body.length>120?'…':''}</div>
+      <div class="row">
+        <button class="btn ghost" onclick="playStudent('${id}')">▶ Play</button>
+        <button class="btn ghost" onclick="editStudent('${id}')">✎ Edit</button>
+        <button class="btn warn" onclick="deleteStudent('${id}')">Delete</button>
+      </div>
+    </div>`).join('')
+    : `<p class="empty">No passages yet. Write your first one below.</p>`;
+  return `
+  <h3>Workspace · Story Builder</h3>
+  <h2>Write your own branching argument</h2>
+  <p>Each passage is a scene, an argument, or a choice-point. Link between passages — and to the built-in images/lenses — with Twine syntax:</p>
+  <p><code>[[What the reader sees-&gt;my_scene_2]]</code> &nbsp; or simply &nbsp; <code>[[image_bus]]</code></p>
+  <div class="plate"><span class="cap">Targets you can link to</span>
+  <p style="margin:6px 0 0;font-family:ui-monospace,Menlo,monospace;font-size:12px;line-height:1.9">
+  <b style="color:var(--accent2)">images:</b> image_church · image_memorial · image_mother · image_bus · image_selfie · image_beluga · image_sidewalk<br>
+  <b style="color:var(--accent2)">lenses:</b> lens_cyborg · lens_intersection · lens_algo · lens_surveil · lens_datafem · lens_jimcode<br>
+  <b style="color:var(--accent2)">your passages:</b> ${Object.keys(student).map(k=>k).join(' · ')||'(none yet)'}</p></div>
+
+  <label for="pid">Passage id <span style="text-transform:none;color:var(--muted)">(lowercase, no spaces — e.g. <code>my_scene_1</code>)</span></label>
+  <input id="pid" placeholder="my_scene_1">
+  <label for="ptitle">Title</label>
+  <input id="ptitle" placeholder="Whose eyes narrate the bus?">
+  <label for="pbody">Body <span style="text-transform:none;color:var(--muted)">(write your argument; use [[ ]] links to branch)</span></label>
+  <textarea id="pbody" placeholder="The machine called the bus &quot;beautifully restored.&quot; But restored for whom?  Reading through [[lens_jimcode]], I argue...&#10;&#10;[[Follow the driver's seating chart->my_scene_2]]&#10;[[Refuse from the seat, like Parks->my_scene_3]]"></textarea>
+  <div class="btnrow">
+    <button class="btn" onclick="saveStudent()">Save passage</button>
+    <button class="btn ghost" onclick="document.getElementById('pid').value='';document.getElementById('ptitle').value='';document.getElementById('pbody').value='';">Clear form</button>
+  </div>
+  <hr class="sep">
+  <h3>Your passages</h3>
+  ${list}
+  ${Object.keys(student).length? `<div class="btnrow"><button class="btn ghost" onclick="exportTwee()">⬇ Export as .twee (open in Twinery)</button></div>`:''}
+  `;
+}
+function saveStudent(){
+  const id=document.getElementById('pid').value.trim().toLowerCase().replace(/\s+/g,'_');
+  const title=document.getElementById('ptitle').value.trim();
+  const body=document.getElementById('pbody').value;
+  if(!id||!title){alert('Give the passage an id and a title.');return;}
+  student[id]={title,body};
+  save(LS.student,student);
+  go('builder');
+}
+function editStudent(id){
+  go('builder');
+  setTimeout(()=>{
+    document.getElementById('pid').value=id;
+    document.getElementById('ptitle').value=student[id].title;
+    document.getElementById('pbody').value=student[id].body;
+    document.getElementById('pid').scrollIntoView({behavior:'smooth',block:'center'});
+  },40);
+}
+function deleteStudent(id){ if(confirm('Delete passage “'+id+'”?')){delete student[id];save(LS.student,student);go('builder');} }
+function playStudent(id){ go(id); }
+function exportTwee(){
+  let out=':: StoryTitle\nMachines & Identity — student story\n\n';
+  for(const [id,p] of Object.entries(student)){
+    out+=`:: ${p.title} {"id":"${id}"}\n${p.body}\n\n`;
+  }
+  download('machines-and-identity.twee', out);
+}
+
+/* ============================================================
+   ARGUMENT SCAFFOLD
+   ============================================================ */
+P.argue = {special:true};
+function renderArgue(){
+  const locked = state.lenses.length < 2;
+  if(locked){
+    return `
+    <h3>Workspace · Argument Scaffold</h3>
+    <h2>Locked</h2>
+    <p>Engage at least <strong>two theoretical lenses</strong> to unlock the scaffold. So far you have engaged
+      <strong>${state.lenses.length}</strong>: ${state.lenses.map(l=>LENS_META[l].name).join(', ')||'none'}.</p>
+    <div class="progressbar"><div style="width:${Math.min(100,state.lenses.length/2*100)}%"></div></div>
+    <div class="choices" style="margin-top:20px"><button class="choice" onclick="go('lenshub')"><span class="arrow">◆</span>Go engage the lenses</button></div>`;
+  }
+  const g=(k)=>argument[k]||'';
+  const noteChips = notes.length? notes.map(n=>`<span class="tag">${(P[n.id]?.title)||n.id}</span>`).join(''):'<span class="empty">no evidence gathered yet</span>';
+  return `
+  <h3>Workspace · Argument Scaffold</h3>
+  <h2>Build your thesis</h2>
+  <p>Turn your exploration into an argument. Your claim should be <em>arguable</em> — someone could reasonably disagree.</p>
+  <div class="tagrow">${noteChips}</div>
+
+  <label>1 · Claim — <span style="text-transform:none;color:var(--muted)">how do machines shape identity? Finish the sentence.</span></label>
+  <textarea id="a_claim" placeholder="Machines shape identity by...">${g('claim')}</textarea>
+
+  <label>2 · Primary framework</label>
+  <select id="a_lens1">${LENS_LIST.map(l=>`<option value="${l}" ${g('lens1')===l?'selected':''}>${LENS_META[l].name} — ${LENS_META[l].who}</option>`).join('')}</select>
+
+  <label>3 · Second framework <span style="text-transform:none;color:var(--muted)">(intersect it with the first)</span></label>
+  <select id="a_lens2">${LENS_LIST.map(l=>`<option value="${l}" ${g('lens2')===l?'selected':''}>${LENS_META[l].name} — ${LENS_META[l].who}</option>`).join('')}</select>
+
+  <label>4 · Key evidence — <span style="text-transform:none;color:var(--muted)">which image(s), and what do they show?</span></label>
+  <textarea id="a_evidence" placeholder="In the beluga image, the machine fused the human face with the animal, which shows...">${g('evidence')}</textarea>
+
+  <label>5 · The counter-move — <span style="text-transform:none;color:var(--muted)">how does a feminist / intersectional reading talk back to the machine?</span></label>
+  <textarea id="a_counter" placeholder="Against the machine's 'view from nowhere,' I argue...">${g('counter')}</textarea>
+
+  <label>6 · So what? — <span style="text-transform:none;color:var(--muted)">why does it matter for who gets to be a full subject?</span></label>
+  <textarea id="a_stakes" placeholder="This matters because...">${g('stakes')}</textarea>
+
+  <div class="btnrow">
+    <button class="btn" onclick="saveArgue()">Save &amp; assemble thesis</button>
+    <button class="btn ghost" onclick="exportArgue()">⬇ Export write-up (.txt)</button>
+  </div>
+  <div id="assembled"></div>`;
+}
+function saveArgue(){
+  argument = {
+    claim:val('a_claim'), lens1:val('a_lens1'), lens2:val('a_lens2'),
+    evidence:val('a_evidence'), counter:val('a_counter'), stakes:val('a_stakes')
+  };
+  save(LS.argue,argument);
+  document.getElementById('assembled').innerHTML = assembledHTML();
+  document.getElementById('assembled').scrollIntoView({behavior:'smooth'});
+}
+function assembledText(){
+  const L=x=>LENS_META[x]?.name||x;
+  return `THESIS (assembled draft)\n\n${argument.claim||'[claim]'} `+
+  `Reading through ${L(argument.lens1)} and ${L(argument.lens2)}, `+
+  `${argument.evidence||'[evidence]'} ${argument.counter||'[counter-move]'} `+
+  `Ultimately, ${argument.stakes||'[stakes]'}`;
+}
+function assembledHTML(){
+  return `<div class="plate prompt" style="margin-top:22px"><span class="cap">Assembled draft — revise into your own prose</span>
+    <p style="margin-bottom:0">${assembledText().replace('THESIS (assembled draft)\n\n','').replace(/\n/g,'<br>')}</p></div>`;
+}
+function exportArgue(){
+  const L=x=>LENS_META[x]?.name||x;
+  let t='MACHINES & IDENTITY — Argument Worksheet\n=========================================\n\n';
+  t+=`CLAIM:\n${argument.claim||''}\n\n`;
+  t+=`FRAMEWORKS:\n1) ${L(argument.lens1)} — ${LENS_META[argument.lens1]?.who||''}\n2) ${L(argument.lens2)} — ${LENS_META[argument.lens2]?.who||''}\n\n`;
+  t+=`EVIDENCE:\n${argument.evidence||''}\n\n`;
+  t+=`COUNTER-MOVE:\n${argument.counter||''}\n\n`;
+  t+=`STAKES:\n${argument.stakes||''}\n\n`;
+  t+=`FIELD NOTES:\n${notes.map(n=>'- '+n.text).join('\n')||'(none)'}\n\n`;
+  t+='-----------------------------------------\n'+assembledText();
+  download('argument-worksheet.txt', t);
+}
+
+/* ============================================================
+   ENGINE
+   ============================================================ */
+function val(id){const e=document.getElementById(id);return e?e.value:'';}
+function download(name,text){
+  const b=new Blob([text],{type:'text/plain'});const u=URL.createObjectURL(b);
+  const a=document.createElement('a');a.href=u;a.download=name;a.click();URL.revokeObjectURL(u);
+}
+
+// parse [[Label->target]] / [[target<-Label]] / [[target]]
+function parseLinks(body){
+  return body.replace(/\[\[([^\]]+)\]\]/g,(m,inner)=>{
+    let label,target;
+    if(inner.includes('->')){[label,target]=inner.split('->');}
+    else if(inner.includes('<-')){[target,label]=inner.split('<-');}
+    else {label=inner;target=inner;}
+    target=target.trim(); label=label.trim();
+    return `<button class="inlink" onclick="go('${target.replace(/'/g,"\\'")}')">${label} →</button>`;
+  });
+}
+
+function go(id){
+  window.scrollTo({top:0,behavior:'instant'});
+  markVisited(id);
+  // lens engagement
+  if(id.startsWith('lens_')) markLens(id.replace('lens_',''));
+  const stage=document.getElementById('stage');
+
+  // special workspaces
+  if(id==='notes'){stage.innerHTML=renderNotes();return;}
+  if(id==='builder'){stage.innerHTML=renderBuilder();return;}
+  if(id==='argue'){stage.innerHTML=renderArgue();return;}
+
+  // built-in narrative passage
+  if(P[id] && !P[id].special){
+    const p=P[id];
+    stage.innerHTML=`${parseLinks(p.body)}`;
+    return;
+  }
+  // student passage
+  if(student[id]){
+    const p=student[id];
+    stage.innerHTML=`
+      <h3>Your Passage</h3>
+      <h2>${escapeHtml(p.title)}</h2>
+      <div style="font-size:17px">${parseLinks(escapeHtml(p.body)).replace(/\n/g,'<br>')}</div>
+      <div class="choices" style="margin-top:26px">
+        <button class="choice" onclick="go('builder')"><span class="arrow">✎</span>Back to the builder</button>
+      </div>`;
+    return;
+  }
+  // missing target (from a link that points nowhere yet)
+  stage.innerHTML=`
+    <h3>Missing passage</h3>
+    <h2>“${escapeHtml(id)}” doesn’t exist yet</h2>
+    <p>A link points to <code>${escapeHtml(id)}</code>, but no passage with that id has been written. In real Twine this is a dangling link — write the passage to complete the branch.</p>
+    <div class="choices">
+      <button class="choice" onclick="editNew('${escapeHtml(id)}')"><span class="arrow">✎</span>Create “${escapeHtml(id)}” now</button>
+      <button class="choice" onclick="go('builder')"><span class="arrow">←</span>Back to the builder</button>
+    </div>`;
+}
+function editNew(id){
+  go('builder');
+  setTimeout(()=>{document.getElementById('pid').value=id;document.getElementById('ptitle').focus();},40);
+}
+function escapeHtml(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function restart(){
+  if(!confirm('Restart the story path? Your Field Notes, passages, and thesis are kept.')) return;
+  state={lenses:state.lenses,visited:[]}; // keep lenses engaged
+  save(LS.progress,state);
+  go('start');
+}
+
+/* boot */
+renderLensDots();
+go('start');
+</script>
+</body>
+</html>

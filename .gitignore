@@ -1,0 +1,5 @@
+.DS_Store
+.claude/
+
+# Large binary source images — keep out of git history (consider Git LFS if needed)
+Images/
