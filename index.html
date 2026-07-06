@@ -166,8 +166,8 @@
 
 <!-- Theory overlay -->
 <div class="ov" id="theory"><div class="sheet"><span class="close" onclick="closeOv('theory')">✕</span>
-  <h1>Six lenses for reading the machine</h1>
-  <p>Use these to argue <em>how machines shape identity</em>. Tag any image with a lens from its inspector, then connect images and passages into a claim.</p>
+  <h1>The feminist framework — three readings</h1>
+  <p>Use these assigned texts to argue <em>how machines shape identity</em>. Tag any image with a lens from its inspector, then connect images and passages into a claim.</p>
   <div id="lensList"></div>
 </div></div>
 
@@ -251,32 +251,30 @@ const GALLERY = [
  {f:'IMG_4047.jpg',t:'Restored bus (interior)',cl:'Montgomery',c:'Empty bus seats beneath a historical photo frieze.',x:'Inside the Rosa Parks Museum bus — where refusal happened.',a:'A wide angle exaggerates the aisle; the empty seat invites projection.'}
 ];
 
-/* Lenses — Crenshaw cited via her text publications (On Intersectionality, 2017; Say Her Name report, 2015) */
+/* Feminist framework — the three assigned readings (text publications only) */
 const LENSES = {
- cyborg:{name:'The Cyborg', who:'Donna Haraway, “A Cyborg Manifesto,” 1985',
-   idea:'Identity is not natural or pure but constructed and hybrid. The cyborg — part organism, part machine — refuses the dualisms (human/animal, human/machine) once used to rank and dominate.',
-   quote:'“I would rather be a cyborg than a goddess.”', cite:'Donna Haraway, A Cyborg Manifesto'},
- intersection:{name:'Intersectionality', who:'Kimberlé Crenshaw — On Intersectionality: Essential Writings (The New Press, 2017); with Andrea J. Ritchie, Say Her Name: Resisting Police Brutality Against Black Women (AAPF report, 2015)', updated:true,
-   idea:'Crenshaw’s written work carries intersectionality from legal theory into public reckoning. The Say Her Name report (2015) documents Black women killed by police whose names go unrecorded, and On Intersectionality (2017) collects her argument that any framework tracking one axis at a time cannot see people who stand at the intersection. When a machine classifies by a single category, it repeats that erasure.',
-   quote:'“Because the intersectional experience is greater than the sum of racism and sexism, any analysis that does not take intersectionality into account cannot sufficiently address the particular manner in which Black women are subordinated.”',
-   cite:'Kimberlé Crenshaw, “Demarginalizing the Intersection,” collected in On Intersectionality: Essential Writings (2017)'},
- algo:{name:'Algorithms of Oppression', who:'Safiya Umoja Noble, 2018',
-   idea:'Ranking and search systems are not neutral mirrors; they encode racism and sexism under a banner of objectivity — “technological redlining.” To rank these photos (beautiful vs. “contrast”) is itself a political act.',
-   quote:'“Data discrimination is a real social problem.”', cite:'Safiya Umoja Noble, Algorithms of Oppression, 2018'},
- surveil:{name:'Surveillance of Blackness', who:'Simone Browne, “Dark Matters,” 2015',
-   idea:'Modern watching technologies grow out of slavery’s surveillance — a “racializing surveillance” that produces race and marks Blackness as something to track. A camera under a bombed church folds a site of terror into a network.',
-   quote:'“Surveillance is nothing new to black folks.”', cite:'Simone Browne, Dark Matters, 2015'},
- datafem:{name:'Data Feminism', who:'D’Ignazio & Klein, 2020',
-   idea:'Examine power, elevate embodiment, make labor visible, and reject the “view from nowhere.” The machine wrote from nowhere — no body, no stake, total confidence — turning a sleeping person into “contrast.”',
-   quote:'“What is often computed as neutral is anything but.”', cite:'D’Ignazio & Klein, Data Feminism, 2020'},
- jimcode:{name:'The New Jim Code', who:'Ruha Benjamin, “Race After Technology,” 2019',
-   idea:'New tech reproduces old inequities while appearing more objective — the “New Jim Code.” The 1955 bus sorted bodies by race with steel and rules; today’s algorithms sort by proxy while claiming to be colorblind.',
-   quote:'“Racist robots reflect the coded inequities of everyday life.”', cite:'Ruha Benjamin, Race After Technology, 2019'}
+ crenshaw:{name:'Intersectionality', tag:'Crenshaw',
+   who:'Kimberlé Crenshaw, “Mapping the Margins: Intersectionality, Identity Politics, and Violence against Women of Color,” Stanford Law Review 43, no. 6 (1991): 1241–1299.',
+   url:'https://doi.org/10.2307/1229039',
+   idea:'Crenshaw shows that race, gender, and class do not act one at a time; they intersect, producing harms that single-axis thinking — in antiracist and in feminist discourse alike — cannot see. She names structural, political, and representational intersectionality: how women of color are marginalized by systems, by movements, and by how they are represented. A machine that classifies an image along one axis reproduces exactly that erasure.',
+   quote:'“The problem with identity politics is not that it fails to transcend difference, as some critics charge, but rather the opposite — that it frequently conflates or ignores intragroup differences.”',
+   cite:'Crenshaw (1991), Mapping the Margins, p. 1242'},
+ bailey:{name:'Digital Culture & the Margins', tag:'Bailey',
+   who:'Moya Z. Bailey, “All the Digital Humanists Are White, All the Nerds Are Men, but Some of Us Are Brave,” Journal of Digital Humanities 1, no. 1 (2011).',
+   url:'https://journalofdigitalhumanities.org/1-1/all-the-digital-humanists-are-white-all-the-nerds-are-men-but-some-of-us-are-brave-by-moya-z-bailey/',
+   idea:'Bailey — who also coined “misogynoir” — argues that digital tools, and the field that builds them, treat the white male body as the default and push women of color to the margins of both the technology and its imagined users. Her method reverses the order: don’t start with the technology and ask who might use it; start from those at the margins and build from their vantage point. The AI that “read” these photographs was trained inside that same default — so whose gaze is encoded when it folds a Black face reflected in glass into the scenery? (The title echoes the 1982 Black feminist anthology “All the Women Are White, All the Blacks Are Men, But Some of Us Are Brave.”)',
+   quote:'“All the digital humanists are white, all the nerds are men, but some of us are brave.”',
+   cite:'Bailey (2011), Journal of Digital Humanities 1(1)'},
+ cohen:{name:'Black Feminist & Queer Politics', tag:'Cohen',
+   who:'Cathy J. Cohen, in conversation with Sarah J. Jackson, “Ask a Feminist: A Conversation with Cathy J. Cohen on Black Lives Matter, Feminism, and Contemporary Activism,” Signs: Journal of Women in Culture and Society 41, no. 4 (2016): 775–792.',
+   url:'https://doi.org/10.1086/685115',
+   idea:'Cohen — a Black feminist and queer-of-color theorist — argues for a politics that centers the most marginal rather than the most respectable: those cast as deviant, disposable, or outside the “worthy” subject. In the interview she ties this to Black Lives Matter, a movement led largely by Black women and queer people, and to who gets counted as a grievable life. Applied here: which figures does the machine center as “subject,” and which — the sleeping person, the unnamed — does it reduce to background or “contrast”?',
+   cite:'Cohen & Jackson (2016), Signs 41(4): 775–792'}
 };
 const anchorLens = {
- 'IMG_3722.jpg':'surveil','IMG_3819.jpg':'intersection','IMG_3813.jpg':'intersection',
- 'IMG_3812.jpg':'intersection','IMG_3913.jpg':'jimcode','IMG_4047.jpg':'jimcode',
- 'IMG_3887.jpg':'cyborg','IMG_3557.jpg':'cyborg','IMG_3919.jpg':'datafem','IMG_3775.jpg':'surveil'
+ 'IMG_3812.jpg':'crenshaw','IMG_3819.jpg':'crenshaw','IMG_3813.jpg':'crenshaw',
+ 'IMG_3557.jpg':'bailey','IMG_3853.jpg':'bailey','IMG_3722.jpg':'bailey',
+ 'IMG_3887.jpg':'cohen','IMG_3913.jpg':'cohen','IMG_3775.jpg':'cohen','IMG_3919.jpg':'cohen'
 };
 
 /* ============================================================
@@ -307,6 +305,7 @@ function loadSaved(){
   nodes={};
   for(const id in s.nodes){const n=s.nodes[id];
     n.data = n.type==='image'? GALLERY.find(g=>g.f===n.file) : null;
+    if(n.lens && !LENSES[n.lens]) n.lens=null;   // drop lens keys from older versions
     nodes[id]=n;}
   links=s.links||[]; view=s.view||view; startNode=s.startNode||null; nextId=s.nextId||100;
   return true;
@@ -333,7 +332,7 @@ function nodeEl(n){
   el.id='el_'+n.id; el.style.left=n.x+'px'; el.style.top=n.y+'px';
   if(n.type==='image'){
     el.innerHTML=`<img src="${IMGBASE}${n.file}" alt="${esc(n.title)}" draggable="false">
-      ${n.lens?`<span class="lensdot">${LENSES[n.lens].name.split(' ')[0].replace('The','◆')}</span>`:''}
+      ${n.lens&&LENSES[n.lens]?`<span class="lensdot">${LENSES[n.lens].tag}</span>`:''}
       <div class="ntitle">${esc(n.title)}</div>`;
   }else{
     el.innerHTML=`<span class="badge">note${startNode===n.id?' · start':''}</span>
@@ -545,10 +544,11 @@ function openTheory(focus){
   document.getElementById('lensList').innerHTML=Object.keys(LENSES).map(k=>{
     const L=LENSES[k];
     return `<div class="lensblock" id="lb_${k}">
-      <div style="font-size:17px;font-weight:600">${L.name}${L.updated?'<span class="updated">updated source</span>':''}</div>
+      <div style="font-size:17px;font-weight:600">${L.name}</div>
       <div class="who">${L.who}</div>
+      ${L.url?`<div class="who"><a href="${L.url}" target="_blank" rel="noopener" style="color:var(--accent)">${L.url}</a></div>`:''}
       <p>${L.idea}</p>
-      <blockquote>${L.quote}<cite>${L.cite}</cite></blockquote></div>`;
+      ${L.quote?`<blockquote>${L.quote}<cite>${L.cite}</cite></blockquote>`:`<div class="who" style="margin-top:8px">— ${L.cite}</div>`}</div>`;
   }).join('');
   openOv('theory');
   if(typeof focus==='string'&&LENSES[focus]) setTimeout(()=>document.getElementById('lb_'+focus)?.scrollIntoView({behavior:'smooth',block:'center'}),80);

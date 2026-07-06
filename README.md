@@ -60,28 +60,23 @@ disagree?*
 
 ---
 
-## The theoretical lenses
+## The feminist framework
 
-Each lens is built into the app (**Lenses** button). All citations are to
-**text publications**.
+The three assigned readings below are built into the app (**Lenses** button).
+All are **text publications**.
 
-- **The Cyborg** — Donna J. Haraway, *"A Cyborg Manifesto,"* in *Simians,
-  Cyborgs, and Women: The Reinvention of Nature* (New York: Routledge, 1991;
-  first published 1985).
-- **Intersectionality** — Kimberlé W. Crenshaw, *On Intersectionality:
-  Essential Writings* (New York: The New Press, 2017); and Kimberlé W. Crenshaw
-  & Andrea J. Ritchie, *Say Her Name: Resisting Police Brutality Against Black
-  Women* (African American Policy Forum, 2015). See also *"Mapping the Margins:
-  Intersectionality, Identity Politics, and Violence against Women of Color,"*
-  *Stanford Law Review* 43, no. 6 (1991): 1241–1299.
-- **Algorithms of Oppression** — Safiya Umoja Noble, *Algorithms of Oppression:
-  How Search Engines Reinforce Racism* (New York: NYU Press, 2018).
-- **Surveillance of Blackness** — Simone Browne, *Dark Matters: On the
-  Surveillance of Blackness* (Durham: Duke University Press, 2015).
-- **Data Feminism** — Catherine D'Ignazio & Lauren F. Klein, *Data Feminism*
-  (Cambridge, MA: MIT Press, 2020).
-- **The New Jim Code** — Ruha Benjamin, *Race After Technology: Abolitionist
-  Tools for the New Jim Code* (Cambridge: Polity, 2019).
+- **Intersectionality** — Crenshaw, K. (1991). *Mapping the Margins:
+  Intersectionality, Identity Politics, and Violence against Women of Color.*
+  *Stanford Law Review*, 43(6), 1241–1299.
+  <https://doi.org/10.2307/1229039>
+- **Digital culture & the margins** — Bailey, M. Z. (2011). *All the digital
+  humanists are white, all the nerds are men, but some of us are brave.*
+  *Journal of Digital Humanities*, 1(1).
+  <https://journalofdigitalhumanities.org/1-1/all-the-digital-humanists-are-white-all-the-nerds-are-men-but-some-of-us-are-brave-by-moya-z-bailey/>
+- **Black feminist & queer politics** — Cohen, C. J., & Jackson, S. J. (2016).
+  *Ask a feminist: A conversation with Cathy J. Cohen on Black Lives Matter,
+  feminism, and contemporary activism.* *Signs: Journal of Women in Culture and
+  Society*, 41(4), 775–792. <https://doi.org/10.1086/685115>
 
 ---
 
