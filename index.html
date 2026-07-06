@@ -53,7 +53,7 @@
   .node.image .lensdot{position:absolute;top:6px;right:6px;background:var(--accent);color:#111;
     font-family:ui-monospace,Menlo,monospace;font-size:9px;padding:2px 5px;border-radius:10px;letter-spacing:.04em}
   .node.passage{width:200px;cursor:grab;background:#14171d;border-color:#33404d}
-  .node.passage .ntitle{font-weight:600;font-size:14px;padding:8px 10px 2px;color:#cfe0ef}
+  .node.passage .ntitle{font-weight:600;font-size:14px;padding:22px 10px 2px;color:#cfe0ef}
   .node.passage .nbody{font-size:12.5px;line-height:1.45;color:#b9c2cc;padding:0 10px 10px;
     max-height:92px;overflow:hidden}
   .node.passage.startnode{border-color:#4caf7d;box-shadow:0 0 0 2px rgba(76,175,125,.35)}
@@ -179,7 +179,11 @@
   <p>Fifty photographs — an aquarium, a holiday display, and a pilgrimage through the Civil Rights landmarks of Alabama (the 16th Street Baptist Church, the National Memorial for Peace and Justice, the Rosa Parks and Dexter Avenue sites) — were opened and described by an AI. The machine sorted them, ranked them, and narrated them with the confidence of a museum plaque: deciding what was a <em>subject</em> and what was <em>background</em>, folding a reflected human face into a whale, calling a sleeping person “contrast.” Each card carries the machine’s original reading as <b>Concept</b>, <b>Context</b>, and <b>Abstraction</b>.</p>
   <h3>What you are expected to do</h3>
   <p>This is a hypertext, not a slideshow — there is no single correct order. When you connect two images you author a story the machine never told: the tool <b>merges their concept, context, and abstraction</b> into a new, emergent reading that is yours to revise. Rearrange the cards, draw connections, and write the beats between them. Using the three assigned feminist texts — <em>Crenshaw (1991)</em>, <em>Bailey (2011)</em>, and <em>Cohen &amp; Jackson (2016)</em> — argue <b>how machines shape identity</b>: whose stories get told, who is classified, who is surveilled, whose bodies are read. <b>Every path you build becomes a unique argument branching off the original.</b></p>
-  <div class="btnrow"><button class="btn" onclick="closeOv('abstract')">Start building</button></div>
+  <div class="btnrow">
+    <button class="btn" onclick="closeOv('abstract')">Start from a blank map</button>
+    <button class="btn g" onclick="seedExample()">▶ Load a worked example first</button>
+  </div>
+  <p style="font-size:12px;color:var(--muted)">The example seeds a claim note connected through three images (with model merged stories you can open, edit, or delete). Use <b>Reset</b> anytime to return to the blank archive.</p>
 </div></div>
 
 <!-- Theory overlay -->
@@ -701,6 +705,43 @@ function playAt(id, viaIdx){
   body.innerHTML=html;
 }
 function openAbstract(){ openOv('abstract'); }
+
+/* ----- pre-seeded worked example ----- */
+function fitViewTo(ids){
+  const xs=[],ys=[];
+  ids.forEach(id=>{const el=document.getElementById('el_'+id); if(!el)return; const n=nodes[id];
+    xs.push(n.x,n.x+el.offsetWidth); ys.push(n.y,n.y+el.offsetHeight);});
+  if(!xs.length)return;
+  const minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys);
+  const r=vp.getBoundingClientRect();
+  view.z=Math.max(.4,Math.min(1.1,(r.width-140)/(maxX-minX||1),(r.height-160)/(maxY-minY||1)));
+  view.x=(r.width-(maxX-minX)*view.z)/2 - minX*view.z;
+  view.y=(r.height-(maxY-minY)*view.z)/2 - minY*view.z + 20;
+  applyView(); save();
+}
+function seedExample(){
+  closeOv('abstract');
+  const find=f=>Object.keys(nodes).find(k=>nodes[k].file===f);
+  const mother=find('IMG_3812.jpg'), bus=find('IMG_3913.jpg'), sleep=find('IMG_3919.jpg');
+  if(!mother||!bus||!sleep){ alert('Reset the canvas first, then load the example.'); return; }
+  const EX_Y=1780;   // an empty band below the 50-card grid
+  const pid='n'+(nextId++);
+  nodes[pid]={id:pid,type:'passage',title:'CLAIM (example — edit or delete me)',
+    text:'The machine sorted these photographs into “subjects” and “background.” Read through Crenshaw, I trace how that sorting flattens the people standing at the intersection of race, gender, and class — and I build a counter-path that refuses it.',
+    x:150,y:EX_Y};
+  nodes[mother].x=150; nodes[mother].y=EX_Y+270;
+  nodes[bus].x=500;    nodes[bus].y=EX_Y+270;
+  nodes[sleep].x=850;  nodes[sleep].y=EX_Y+270;
+  nodes[mother].lens='crenshaw'; nodes[bus].lens='cohen'; nodes[sleep].lens='cohen';
+  const add=(from,to,story)=>{ if(!links.some(l=>l.from===from&&l.to===to)) links.push({from,to,story}); };
+  add(pid,mother,'');
+  add(mother,bus,'From the chained mother to the boycott bus: two machines built to sort Black bodies — one by law and iron, one by a seating chart. The cut argues that segregation was infrastructure, and that refusal (Parks) had to be made with the body, in a seat.');
+  add(bus,sleep,'The restored bus is lit like a monument; the person sleeping a block away is left as the machine’s “contrast.” Reading through Cohen, I ask who the movement’s memory still renders disposable — and refuse to treat that body as scenery.');
+  startNode=pid;
+  buildNodes();
+  fitViewTo([pid,mother,bus,sleep]);
+  save();
+}
 
 /* ----- export / reset ----- */
 function exportMenu(){
