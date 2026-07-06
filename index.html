@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Machine Read the Archive — a movable Twine</title>
+<style>
+  :root{
+    --bg:#0d0d0f; --panel:#16161b; --ink:#ece9e4; --muted:#9a978f; --line:#2c2c33;
+    --accent:#c9a227; --ctx:#6f8faf; --abs:#a98fc0; --danger:#b0553f; --link:#7d7d88;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);overflow:hidden;
+    font-family:"Iowan Old Style",Georgia,"Times New Roman",serif}
+  button{font-family:inherit}
+  .mono{font-family:ui-monospace,"SF Mono",Menlo,monospace}
+
+  /* ---------- toolbar ---------- */
+  #bar{position:fixed;top:0;left:0;right:0;height:52px;z-index:40;display:flex;align-items:center;
+    gap:6px;padding:0 12px;background:rgba(13,13,15,.96);border-bottom:1px solid var(--line);backdrop-filter:blur(6px)}
+  #bar .title{font-family:ui-monospace,Menlo,monospace;font-size:12px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--muted);margin-right:6px;white-space:nowrap}
+  .tb{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:3px;
+    padding:7px 11px;font-size:12px;letter-spacing:.04em;cursor:pointer;white-space:nowrap;
+    font-family:ui-monospace,Menlo,monospace}
+  .tb:hover{border-color:var(--accent);color:var(--accent)}
+  .tb.on{background:var(--accent);color:#111;border-color:var(--accent);font-weight:600}
+  .tb.ghost{opacity:.85}
+  .sp{flex:1}
+  .zoomgrp{display:flex;gap:4px;align-items:center}
+  .zbtn{width:30px;height:30px;padding:0;font-size:15px;display:flex;align-items:center;justify-content:center}
+
+  /* ---------- canvas ---------- */
+  #viewport{position:fixed;inset:52px 0 0 0;overflow:hidden;cursor:grab;
+    background:
+      radial-gradient(circle at 1px 1px, #22222a 1px, transparent 0) 0 0/26px 26px,
+      #0b0b0d;}
+  #viewport.panning{cursor:grabbing}
+  #viewport.linking{cursor:crosshair}
+  #canvas{position:absolute;top:0;left:0;width:6000px;height:4500px;transform-origin:0 0}
+  #links{position:absolute;top:0;left:0;width:6000px;height:4500px;pointer-events:none;overflow:visible}
+  #links path.hit{pointer-events:stroke;cursor:pointer}
+
+  .node{position:absolute;border:1px solid var(--line);background:var(--panel);border-radius:5px;
+    overflow:hidden;user-select:none;box-shadow:0 6px 18px rgba(0,0,0,.35);transition:border-color .1s,box-shadow .1s}
+  .node:hover{border-color:#4a4a55}
+  .node.sel{border-color:var(--accent);box-shadow:0 0 0 2px rgba(201,162,39,.35),0 8px 22px rgba(0,0,0,.5)}
+  .node.linksrc{border-color:var(--ctx);box-shadow:0 0 0 2px rgba(111,143,175,.5)}
+  .node.image{width:172px;cursor:grab}
+  .node.image img{display:block;width:100%;height:112px;object-fit:cover;pointer-events:none}
+  .node.image .ntitle{font-family:ui-monospace,Menlo,monospace;font-size:10.5px;color:var(--muted);
+    padding:6px 8px;letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .node.image .lensdot{position:absolute;top:6px;right:6px;background:var(--accent);color:#111;
+    font-family:ui-monospace,Menlo,monospace;font-size:9px;padding:2px 5px;border-radius:10px;letter-spacing:.04em}
+  .node.passage{width:200px;cursor:grab;background:#14171d;border-color:#33404d}
+  .node.passage .ntitle{font-weight:600;font-size:14px;padding:8px 10px 2px;color:#cfe0ef}
+  .node.passage .nbody{font-size:12.5px;line-height:1.45;color:#b9c2cc;padding:0 10px 10px;
+    max-height:92px;overflow:hidden}
+  .node.passage.startnode{border-color:#4caf7d;box-shadow:0 0 0 2px rgba(76,175,125,.35)}
+  .node .badge{position:absolute;top:6px;left:6px;font-family:ui-monospace,Menlo,monospace;font-size:9px;
+    background:rgba(0,0,0,.55);color:#cfe0ef;padding:2px 5px;border-radius:10px}
+
+  /* ---------- inspector ---------- */
+  #insp{position:fixed;top:52px;right:0;bottom:0;width:340px;z-index:35;background:var(--panel);
+    border-left:1px solid var(--line);transform:translateX(100%);transition:transform .18s;overflow-y:auto;padding:18px}
+  #insp.open{transform:none}
+  #insp h2{font-size:18px;margin:6px 0 4px}
+  #insp .close{position:absolute;top:12px;right:14px;cursor:pointer;color:var(--muted);font-size:18px}
+  #insp img{width:100%;border-radius:4px;border:1px solid var(--line);margin:8px 0}
+  .cca .cell{padding:9px 0;border-top:1px solid var(--line)}
+  .cca .k{font-family:ui-monospace,Menlo,monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--accent);margin-bottom:3px}
+  .cca .k.c2{color:var(--ctx)} .cca .k.c3{color:var(--abs)}
+  .cca .v{font-size:14px;line-height:1.5}
+  label{display:block;font-family:ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.06em;
+    text-transform:uppercase;color:var(--muted);margin:14px 0 5px}
+  input,textarea,select{width:100%;background:#0a0a0c;border:1px solid var(--line);color:var(--ink);
+    padding:9px 10px;border-radius:3px;font-family:inherit;font-size:14px}
+  textarea{min-height:120px;resize:vertical;line-height:1.5}
+  input:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent)}
+  .btn{background:var(--accent);color:#111;border:none;padding:9px 13px;border-radius:3px;cursor:pointer;
+    font-family:ui-monospace,Menlo,monospace;font-size:12px;letter-spacing:.05em;font-weight:600}
+  .btn:hover{filter:brightness(1.08)}
+  .btn.g{background:transparent;color:var(--ink);border:1px solid var(--line);font-weight:400}
+  .btn.g:hover{border-color:var(--accent)}
+  .btn.d{background:var(--danger);color:#fff}
+  .btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .lenschip{display:inline-block;margin:4px 4px 0 0;background:#0a0a0c;border:1px solid var(--line);
+    border-radius:20px;padding:4px 10px;font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--accent);cursor:pointer}
+  .lenschip:hover{border-color:var(--accent)}
+  .conn{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--muted);padding:5px 0;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+  .conn .x{cursor:pointer;color:var(--danger)}
+
+  /* ---------- overlays ---------- */
+  .ov{position:fixed;inset:0;z-index:60;background:rgba(6,6,8,.82);display:none;align-items:flex-start;
+    justify-content:center;overflow-y:auto;padding:40px 16px}
+  .ov.open{display:flex}
+  .sheet{background:var(--panel);border:1px solid var(--line);border-radius:6px;max-width:760px;width:100%;
+    padding:26px 30px 40px;position:relative}
+  .sheet .close{position:absolute;top:14px;right:18px;cursor:pointer;color:var(--muted);font-size:22px}
+  .sheet h1{font-size:26px;margin:6px 0 2px}
+  .sheet h3{font-family:ui-monospace,Menlo,monospace;font-size:12px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--accent);margin:22px 0 6px}
+  .sheet p{line-height:1.6}
+  blockquote{border-left:2px solid var(--accent);margin:12px 0;padding:2px 16px;font-style:italic;color:#cfc9be}
+  blockquote cite{display:block;font-style:normal;font-size:12px;color:var(--muted);margin-top:6px;font-family:ui-monospace,Menlo,monospace}
+  .lensblock{border:1px solid var(--line);border-radius:5px;padding:14px 16px;margin:12px 0;background:#101015}
+  .lensblock .who{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--ctx);letter-spacing:.04em}
+  .updated{display:inline-block;background:#2a2412;border:1px solid var(--accent);color:var(--accent);
+    font-family:ui-monospace,Menlo,monospace;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;
+    padding:2px 6px;border-radius:10px;margin-left:6px}
+
+  /* ---------- play mode ---------- */
+  #play .sheet{max-width:680px}
+  #play img{width:100%;border-radius:5px;border:1px solid var(--line);margin:10px 0}
+  .playchoice{display:block;width:100%;text-align:left;background:#101015;border:1px solid var(--line);
+    color:var(--ink);padding:11px 14px;border-radius:4px;margin:8px 0;cursor:pointer;font-size:15px}
+  .playchoice:hover{border-color:var(--accent);transform:translateX(3px)}
+  .playchoice .a{color:var(--accent);margin-right:8px}
+
+  /* ---------- tip ---------- */
+  #tip{position:fixed;left:14px;bottom:14px;z-index:38;max-width:420px;background:var(--panel);
+    border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:5px;padding:12px 14px;font-size:13px;line-height:1.5}
+  #tip .mono{color:var(--accent)}
+  #tip .x{float:right;cursor:pointer;color:var(--muted);margin-left:10px}
+  .hidden{display:none}
+  @media(max-width:640px){ #insp{width:100%} }
+</style>
+</head>
+<body>
+
+<div id="bar">
+  <span class="title">The Machine Read the Archive</span>
+  <button class="tb" id="btnConnect" onclick="toggleLink()">↳ Connect</button>
+  <button class="tb" onclick="addPassage()">＋ Passage</button>
+  <button class="tb" onclick="openPlay()">▶ Play</button>
+  <button class="tb ghost" onclick="openTheory()">Lenses</button>
+  <button class="tb ghost" onclick="openArgue()">Argue</button>
+  <span class="sp"></span>
+  <div class="zoomgrp">
+    <button class="tb zbtn" onclick="zoomBy(1/1.2)">−</button>
+    <button class="tb zbtn" onclick="zoomBy(1.2)">＋</button>
+    <button class="tb" onclick="fitView()">Fit</button>
+  </div>
+  <button class="tb ghost" onclick="exportMenu()">Export</button>
+  <button class="tb ghost" onclick="resetLayout()">Reset</button>
+</div>
+
+<div id="viewport">
+  <div id="canvas">
+    <svg id="links"><defs>
+      <marker id="arrow" markerWidth="12" markerHeight="12" refX="9" refY="5" orient="auto">
+        <path d="M0,0 L10,5 L0,10 z" fill="#8a8a96"/>
+      </marker>
+    </defs></svg>
+    <div id="nodes"></div>
+  </div>
+</div>
+
+<div id="insp"><span class="close" onclick="closeInsp()">✕</span><div id="inspBody"></div></div>
+
+<div id="tip">
+  <span class="x" onclick="document.getElementById('tip').classList.add('hidden')">✕</span>
+  <b>Build your argument as a map.</b> Drag the photo cards anywhere. Hit <span class="mono">↳ Connect</span>, then click one card and another to draw an arrow. Add <span class="mono">＋ Passage</span> notes to write your claim between images. <span class="mono">▶ Play</span> walks your story. Everything saves automatically.
+</div>
+
+<!-- Theory overlay -->
+<div class="ov" id="theory"><div class="sheet"><span class="close" onclick="closeOv('theory')">✕</span>
+  <h1>Six lenses for reading the machine</h1>
+  <p>Use these to argue <em>how machines shape identity</em>. Tag any image with a lens from its inspector, then connect images and passages into a claim.</p>
+  <div id="lensList"></div>
+</div></div>
+
+<!-- Argue overlay -->
+<div class="ov" id="argue"><div class="sheet"><span class="close" onclick="closeOv('argue')">✕</span>
+  <h1>Argument scaffold</h1>
+  <p>Turn your map into a thesis. An <em>arguable</em> claim is one someone could reasonably dispute.</p>
+  <label>1 · Claim — how do machines shape identity?</label>
+  <textarea id="a_claim" oninput="saveArg()" placeholder="Machines shape identity by..."></textarea>
+  <label>2 · Primary lens</label><select id="a_l1" onchange="saveArg()"></select>
+  <label>3 · Second lens (intersect it with the first)</label><select id="a_l2" onchange="saveArg()"></select>
+  <label>4 · Evidence — which images, and what do they show?</label>
+  <textarea id="a_ev" oninput="saveArg()" placeholder="The bus (IMG_3913) and the memorial (IMG_3819) together show..."></textarea>
+  <label>5 · Counter-move — how does a feminist / intersectional reading talk back to the machine?</label>
+  <textarea id="a_cm" oninput="saveArg()" placeholder="Against the machine's 'view from nowhere,' I argue..."></textarea>
+  <label>6 · So what? — why does it matter for who gets to be a full subject?</label>
+  <textarea id="a_sw" oninput="saveArg()" placeholder="This matters because..."></textarea>
+  <div class="btnrow"><button class="btn" onclick="exportArg()">⬇ Export write-up (.txt)</button></div>
+</div></div>
+
+<!-- Play overlay -->
+<div class="ov" id="play"><div class="sheet"><span class="close" onclick="closeOv('play')">✕</span>
+  <div id="playBody"></div>
+</div></div>
+
+<script>
+/* ============================================================
+   DATA — 50 photographs, each read Concept / Context / Abstraction
+   ============================================================ */
+const IMGBASE='assets/img/';
+const GALLERY = [
+ {f:'IMG_2171.jpg',t:'Palm crown from below',cl:'Nature',c:'The radiating fronds of a palm seen straight up the trunk.',x:'A quiet outdoor pause, likely a resort or garden path.',a:'High-contrast monochrome flattens the fronds into a radial starburst against pure black.'},
+ {f:'IMG_2174.jpg',t:'Leaves in darkness',cl:'Nature',c:'Overlapping variegated leaves lit by a single source.',x:'A low-light nature study of ordinary foliage.',a:'Chiaroscuro turns leaves into folds of fabric or shells; the frame falls to black.'},
+ {f:'IMG_2189.jpg',t:'Dock lamp at night',cl:'Nature',c:'A caged maritime lamp glowing on a pier.',x:'A nighttime waterfront with distant shoreline lights.',a:'A luminous orb against deep negative space; background lights become soft bokeh.'},
+ {f:'IMG_3475.jpg',t:'Dolphins in light shafts',cl:'Aquarium',c:'Two dolphins gliding beneath the surface.',x:'A large aquarium (consistent with the Georgia Aquarium).',a:'God-rays and silhouette create an almost sacred, painterly underwater scene.'},
+ {f:'IMG_3478.jpg',t:'Water surface texture',cl:'Aquarium',c:'The rippled, bubble-flecked underside of the water’s surface.',x:'The same tank, camera aimed upward.',a:'A pure texture study — no clear subject, only pattern and tone.'},
+ {f:'IMG_3488.jpg',t:'Dolphin portrait (warm)',cl:'Aquarium',c:'A dolphin’s face pressed near the glass.',x:'An intimate encounter at the viewing window.',a:'Warm-toned close-up emphasizing the “smile” and direct eye contact.'},
+ {f:'IMG_3496.jpg',t:'Dolphin portrait (cool)',cl:'Aquarium',c:'A dolphin approaching with mouth open.',x:'Near the surface of the aquarium tank.',a:'Cool cyan monochrome and haze give a dreamlike, weightless feel.'},
+ {f:'IMG_3533.jpg',t:'Sea turtle',cl:'Aquarium',c:'A sea turtle gliding past a rock wall.',x:'An aquarium habitat.',a:'Direct eye contact with the lens against a pocked, textured backdrop.'},
+ {f:'IMG_3549.jpg',t:'Beluga on a log',cl:'Aquarium',c:'A beluga whale resting against a submerged log.',x:'An aquarium beluga habitat with artificial rockwork.',a:'A pale luminous body against a dark cave; soft sepia grade.'},
+ {f:'IMG_3550.jpg',t:'Beluga (blurred)',cl:'Aquarium',c:'A beluga curling through the water.',x:'The aquarium tank.',a:'Motion blur and grain render it as a ghostly white form.'},
+ {f:'IMG_3551.jpg',t:'Beluga (vertical)',cl:'Aquarium',c:'A beluga floating head-up.',x:'The tank, with surface reflections above.',a:'Hazy, high-key glow isolates the animal.'},
+ {f:'IMG_3557.jpg',t:'Beluga + reflected face',cl:'Aquarium',c:'A beluga overlaid with the reflection of a human face.',x:'Aquarium glass acting as a mirror.',a:'A ghostly double-exposure collapsing human, animal, and apparatus.'},
+ {f:'IMG_3657.jpg',t:'Gingerbread house display',cl:'Holiday',c:'A two-story decorated holiday “gingerbread” house.',x:'A hotel or mall atrium during the winter holidays.',a:'Ornate B&W detail set against a swirling patterned floor.'},
+ {f:'IMG_3717.jpg',t:'16th St. Baptist — exterior',cl:'Birmingham',c:'The brick towers and arched entrance of the church.',x:'Birmingham — site of the 1963 bombing that killed four girls.',a:'A dramatic low angle and darkened sky monumentalize the facade.'},
+ {f:'IMG_3722.jpg',t:'Church cross marquee (+ camera)',cl:'Birmingham',c:'The cross-shaped church sign, a security camera bolted below.',x:'A Civil Rights landmark now under modern surveillance.',a:'Iconic signage against sky; the camera is a quiet, telling detail.'},
+ {f:'IMG_3725.jpg',t:'Stained-glass skylight',cl:'Birmingham',c:'A coffered ceiling framing a stained-glass skylight.',x:'Inside the church sanctuary.',a:'A tilted, geometric composition; light used as architecture.'},
+ {f:'IMG_3729.jpg',t:'Pulpit & communion table',cl:'Birmingham',c:'Pulpit, open Bible, organ pipes; “This do in remembrance of me.”',x:'The sanctuary — a space of worship and memory.',a:'Symmetrical, reverent framing centered on the cross.'},
+ {f:'IMG_3730.jpg',t:'Stained-glass windows',cl:'Birmingham',c:'A row of stained-glass windows above dark pews.',x:'The church interior.',a:'Receding perspective; luminous glass against shadowed wood.'},
+ {f:'IMG_3735.jpg',t:'Dome ceiling',cl:'Trail',c:'A circular domed ceiling with radiating ribs and an oculus.',x:'An institutional or memorial rotunda.',a:'Perfect radial symmetry; near-abstract geometry.'},
+ {f:'IMG_3775.jpg',t:'“Bus Ride to Freedom”',cl:'Montgomery',c:'Museum title text seen through shattered glass.',x:'The Freedom Rides Museum, Montgomery.',a:'A web of cracks overlays the words — violence inscribed on the frame itself.'},
+ {f:'IMG_3802.jpg',t:'Edmund Pettus Bridge',cl:'Selma',c:'The bridge’s arch and name at night.',x:'Selma — site of “Bloody Sunday,” 1965.',a:'Motion blur and streaked headlights make the span feel restless, spectral.'},
+ {f:'IMG_3812.jpg',t:'Enslaved mother (sculpture)',cl:'Montgomery',c:'A bronze of an enslaved mother in chains holding her child.',x:'A memorial to enslavement among Montgomery’s legacy sites.',a:'A low angle and stormy sky heighten anguish; wet ground mirrors the figures.'},
+ {f:'IMG_3813.jpg',t:'Memorial column — Marion County',cl:'Montgomery',c:'A steel monument engraved “Marion County, Alabama / Willis Perkins.”',x:'The National Memorial for Peace and Justice (EJI).',a:'Sharp foreground text against a receding corridor of columns — naming as form.'},
+ {f:'IMG_3819.jpg',t:'“Maceo Snipes”',cl:'Montgomery',c:'A close-up naming victim Maceo Snipes, 07.18.1946.',x:'The EJI memorial — Snipes was killed for voting.',a:'Shallow focus isolates the name; the archive made intimate.'},
+ {f:'IMG_3827.jpg',t:'Hanging monument columns',cl:'Montgomery',c:'Rows of suspended steel columns seen from below.',x:'The EJI memorial’s central space, evoking hanging bodies.',a:'A dizzying upward view; repetition as overwhelming scale.'},
+ {f:'IMG_3828.jpg',t:'“They Are All Honored Here”',cl:'Montgomery',c:'An inscription on weathered wood.',x:'The memorial’s closing statement.',a:'Stark lettering on raw grain; near-monochrome solemnity.'},
+ {f:'IMG_3830.jpg',t:'Bronze walking figures',cl:'Montgomery',c:'Three weathered bronze figures — an elder in a headscarf leading two women.',x:'A memorial sculpture group on themes of endurance and passage.',a:'A low, frontal frame on a wet path; the elder’s face fills the foreground.'},
+ {f:'IMG_3844.jpg',t:'Church interior (pews)',cl:'Montgomery',c:'Rows of pews, pendant lamps, a distant cross and flag.',x:'A historic Black church sanctuary.',a:'One-point perspective draws the eye to the chancel.'},
+ {f:'IMG_3845.jpg',t:'Tilted brick facade',cl:'Trail',c:'A brick building with balustraded balconies.',x:'A building along the trail.',a:'Rotated 90°, the facade becomes a disorienting abstract pattern.'},
+ {f:'IMG_3847.jpg',t:'State Capitol + footprints',cl:'Montgomery',c:'The Alabama State Capitol beyond painted footprints on the plaza.',x:'The end point of the 1965 Selma-to-Montgomery march.',a:'A worm’s-eye view makes the painted footsteps loom like a marching crowd.'},
+ {f:'IMG_3849.jpg',t:'Dexter Ave. church steps',cl:'Montgomery',c:'The church’s split staircase with visitors.',x:'Dexter Avenue King Memorial Baptist Church, where Dr. King pastored.',a:'Strong white diagonals of the stairs against dark brick.'},
+ {f:'IMG_3851.jpg',t:'“Together We Prevail”',cl:'Montgomery',c:'Stenciled words on a crumbling brick wall.',x:'A civil-rights-themed mural in Montgomery.',a:'High contrast; decayed brick as a metaphor for endurance.'},
+ {f:'IMG_3852.jpg',t:'Night street to Capitol',cl:'Montgomery',c:'Dexter Avenue at night leading to the lit Capitol dome.',x:'Downtown Montgomery after dark.',a:'Deep blacks and scattered bokeh; cinematic emptiness.'},
+ {f:'IMG_3853.jpg',t:'Profile self-portrait',cl:'Montgomery',c:'A person in hat and glasses in profile against the night city.',x:'The photographer places themselves within the trail.',a:'An extreme foreground face against the distant lit Capitol — self as witness.'},
+ {f:'IMG_3858.jpg',t:'Pedestrian tunnel',cl:'Trail',c:'An empty, lit underpass with benches.',x:'A transit tunnel at night.',a:'One-point symmetry and receding lights; solitude.'},
+ {f:'IMG_3867.jpg',t:'Cobblestone street',cl:'Montgomery',c:'A downtown street paved in cobbles at night.',x:'Montgomery’s older district.',a:'Blown-out high-contrast processing turns the stones into a stark graphic field.'},
+ {f:'IMG_3871.jpg',t:'Rosa Parks statue',cl:'Montgomery',c:'A standing bronze of Rosa Parks in hat and glasses.',x:'Downtown Montgomery, near the bus-boycott sites.',a:'Warm nocturnal light; the figure emerges from a dark street.'},
+ {f:'IMG_3887.jpg',t:'Face to face with Parks',cl:'Montgomery',c:'A visitor sits opposite the Rosa Parks bronze bust.',x:'A museum bench display — a moment of “conversation.”',a:'Two profiles mirrored, living and cast, against a plain wall.'},
+ {f:'IMG_3903.jpg',t:'MLK parsonage (exterior)',cl:'Montgomery',c:'A white clapboard house with porch and chimney.',x:'The Dexter Parsonage where Dr. King lived.',a:'A vignetted sky and glow lend the modest house a charged aura.'},
+ {f:'IMG_3904.jpg',t:'Porch detail “309”',cl:'Montgomery',c:'A porch column, window, and steps marked “309.”',x:'A close study of the parsonage exterior.',a:'Bright, near-white minimalism; strong verticals of rail and column.'},
+ {f:'IMG_3905.jpg',t:'Neighborhood backs',cl:'Montgomery',c:'The rears of houses behind a chain-link fence with a bare tree.',x:'The historic residential block around the parsonage.',a:'Silvered highlights and a dark sky; a stark, wintry graphic.'},
+ {f:'IMG_3906.jpg',t:'“Unity” stone + shoes',cl:'Montgomery',c:'A stone slab engraved “UNITY,” ringed by visitors’ feet.',x:'The Civil Rights Memorial Center plaza.',a:'Overhead framing turns strangers’ shoes into a communal circle.'},
+ {f:'IMG_3907.jpg',t:'“MLK Lived Here”',cl:'Montgomery',c:'The Dexter Parsonage Museum with a family and its sign.',x:'Tourists documenting the King home.',a:'Bright daylight; a pollarded tree anchors the foreground.'},
+ {f:'IMG_3909.jpg',t:'Wooden staircase',cl:'Trail',c:'A steep wooden staircase inside an old structure.',x:'A historic building interior.',a:'Crossing diagonals and raw timber; chiaroscuro depth.'},
+ {f:'IMG_3913.jpg',t:'Restored city bus (exterior)',cl:'Montgomery',c:'A gleaming 1950s transit bus on a brick street.',x:'The Rosa Parks Museum — emblem of the Bus Boycott.',a:'HDR chrome and a low angle heroize the machine; herringbone pavers lead in.'},
+ {f:'IMG_3916.jpg',t:'Sunlit sidewalk',cl:'Montgomery',c:'A downtown sidewalk raked by bare-tree shadows.',x:'A daytime Montgomery street scene.',a:'Long shadows form a rhythmic pattern across the pavement.'},
+ {f:'IMG_3919.jpg',t:'Sleeping on the street',cl:'Montgomery',c:'A person sleeping against a storefront as pedestrians pass.',x:'Present-day inequality on the same historic streets.',a:'A diagonal shadow splits the frame; the figure sits at the light’s edge.'},
+ {f:'IMG_3921.jpg',t:'Aerial: river & fields',cl:'Departure',c:'A river bending through farmland and a small town.',x:'An airplane-window view arriving in or leaving Alabama.',a:'High-contrast monochrome renders the land as a map-like patchwork.'},
+ {f:'IMG_3924.jpg',t:'Aerial: forests & suburbs',cl:'Departure',c:'Wooded suburbs seen from altitude through haze.',x:'The flight bookending the trip.',a:'Bright, misty high-key tones flatten the terrain to soft texture.'},
+ {f:'IMG_4047.jpg',t:'Restored bus (interior)',cl:'Montgomery',c:'Empty bus seats beneath a historical photo frieze.',x:'Inside the Rosa Parks Museum bus — where refusal happened.',a:'A wide angle exaggerates the aisle; the empty seat invites projection.'}
+];
+
+/* Lenses — Crenshaw updated to her current work (2015 #SayHerName / 2016 TED) */
+const LENSES = {
+ cyborg:{name:'The Cyborg', who:'Donna Haraway, “A Cyborg Manifesto,” 1985',
+   idea:'Identity is not natural or pure but constructed and hybrid. The cyborg — part organism, part machine — refuses the dualisms (human/animal, human/machine) once used to rank and dominate.',
+   quote:'“I would rather be a cyborg than a goddess.”', cite:'Donna Haraway, A Cyborg Manifesto'},
+ intersection:{name:'Intersectionality', who:'Kimberlé Crenshaw — “The Urgency of Intersectionality” (TED, 2016) & #SayHerName / AAPF (2015)', updated:true,
+   idea:'Crenshaw’s recent work moves intersectionality from legal theory into public reckoning. #SayHerName (2015) documents Black women killed by police whose names go unrecorded; the 2016 TED talk argues that systems which track along a single axis literally cannot see people at the intersection. When a machine classifies by one category at a time, it repeats that erasure.',
+   quote:'“When there is no name for a problem, you can’t see a problem; and when you can’t see a problem, you pretty much can’t solve it.”',
+   cite:'Kimberlé Crenshaw, “The Urgency of Intersectionality,” TED, 2016'},
+ algo:{name:'Algorithms of Oppression', who:'Safiya Umoja Noble, 2018',
+   idea:'Ranking and search systems are not neutral mirrors; they encode racism and sexism under a banner of objectivity — “technological redlining.” To rank these photos (beautiful vs. “contrast”) is itself a political act.',
+   quote:'“Data discrimination is a real social problem.”', cite:'Safiya Umoja Noble, Algorithms of Oppression, 2018'},
+ surveil:{name:'Surveillance of Blackness', who:'Simone Browne, “Dark Matters,” 2015',
+   idea:'Modern watching technologies grow out of slavery’s surveillance — a “racializing surveillance” that produces race and marks Blackness as something to track. A camera under a bombed church folds a site of terror into a network.',
+   quote:'“Surveillance is nothing new to black folks.”', cite:'Simone Browne, Dark Matters, 2015'},
+ datafem:{name:'Data Feminism', who:'D’Ignazio & Klein, 2020',
+   idea:'Examine power, elevate embodiment, make labor visible, and reject the “view from nowhere.” The machine wrote from nowhere — no body, no stake, total confidence — turning a sleeping person into “contrast.”',
+   quote:'“What is often computed as neutral is anything but.”', cite:'D’Ignazio & Klein, Data Feminism, 2020'},
+ jimcode:{name:'The New Jim Code', who:'Ruha Benjamin, “Race After Technology,” 2019',
+   idea:'New tech reproduces old inequities while appearing more objective — the “New Jim Code.” The 1955 bus sorted bodies by race with steel and rules; today’s algorithms sort by proxy while claiming to be colorblind.',
+   quote:'“Racist robots reflect the coded inequities of everyday life.”', cite:'Ruha Benjamin, Race After Technology, 2019'}
+};
+const anchorLens = {
+ 'IMG_3722.jpg':'surveil','IMG_3819.jpg':'intersection','IMG_3813.jpg':'intersection',
+ 'IMG_3812.jpg':'intersection','IMG_3913.jpg':'jimcode','IMG_4047.jpg':'jimcode',
+ 'IMG_3887.jpg':'cyborg','IMG_3557.jpg':'cyborg','IMG_3919.jpg':'datafem','IMG_3775.jpg':'surveil'
+};
+
+/* ============================================================
+   STATE
+   ============================================================ */
+const KEY='msi_twine_v1';
+let nodes={}, links=[], view={x:40,y:30,z:.8}, sel=null, startNode=null;
+let linkMode=false, linkSrc=null, nextId=1;
+
+function defaultLayout(){
+  nodes={}; links=[]; startNode=null; nextId=1;
+  const COLS=6, XW=196, YH=176;
+  GALLERY.forEach((g,i)=>{
+    const id='n'+(nextId++);
+    nodes[id]={id,type:'image',file:g.f,title:g.t,x:(i%COLS)*XW+30,y:Math.floor(i/COLS)*YH+30,
+      lens:anchorLens[g.f]||null, data:g};
+  });
+}
+function save(){
+  const plain={};
+  for(const id in nodes){const n=nodes[id];
+    plain[id]={id:n.id,type:n.type,file:n.file,title:n.title,text:n.text,x:n.x,y:n.y,lens:n.lens};}
+  localStorage.setItem(KEY, JSON.stringify({nodes:plain,links,view,startNode,nextId}));
+}
+function loadSaved(){
+  let s; try{s=JSON.parse(localStorage.getItem(KEY))}catch{ }
+  if(!s||!s.nodes) return false;
+  nodes={};
+  for(const id in s.nodes){const n=s.nodes[id];
+    n.data = n.type==='image'? GALLERY.find(g=>g.f===n.file) : null;
+    nodes[id]=n;}
+  links=s.links||[]; view=s.view||view; startNode=s.startNode||null; nextId=s.nextId||100;
+  return true;
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+const vp=document.getElementById('viewport');
+const canvas=document.getElementById('canvas');
+const nodesLayer=document.getElementById('nodes');
+const svg=document.getElementById('links');
+
+function applyView(){ canvas.style.transform=`translate(${view.x}px,${view.y}px) scale(${view.z})`; }
+
+function buildNodes(){
+  nodesLayer.innerHTML='';
+  for(const id in nodes) nodesLayer.appendChild(nodeEl(nodes[id]));
+  drawLinks();
+}
+function nodeEl(n){
+  const el=document.createElement('div');
+  el.className='node '+n.type+(sel===n.id?' sel':'')+(linkSrc===n.id?' linksrc':'')+(startNode===n.id&&n.type==='passage'?' startnode':'');
+  el.id='el_'+n.id; el.style.left=n.x+'px'; el.style.top=n.y+'px';
+  if(n.type==='image'){
+    el.innerHTML=`<img src="${IMGBASE}${n.file}" alt="${esc(n.title)}" draggable="false">
+      ${n.lens?`<span class="lensdot">${LENSES[n.lens].name.split(' ')[0].replace('The','◆')}</span>`:''}
+      <div class="ntitle">${esc(n.title)}</div>`;
+  }else{
+    el.innerHTML=`<span class="badge">note${startNode===n.id?' · start':''}</span>
+      <div class="ntitle">${esc(n.title||'Untitled')}</div>
+      <div class="nbody">${esc(n.text||'Double-click to write your argument…')}</div>`;
+  }
+  attach(el,n.id);
+  return el;
+}
+function updatePos(id){const el=document.getElementById('el_'+id); if(el){el.style.left=nodes[id].x+'px';el.style.top=nodes[id].y+'px';}}
+function nodeCenter(id){const el=document.getElementById('el_'+id); const n=nodes[id];
+  return {x:n.x+(el?el.offsetWidth:170)/2, y:n.y+(el?el.offsetHeight:120)/2};}
+function drawLinks(){
+  const defs=svg.querySelector('defs');
+  svg.innerHTML=''; svg.appendChild(defs);
+  links.forEach((lk,i)=>{
+    if(!nodes[lk.from]||!nodes[lk.to])return;
+    const a=nodeCenter(lk.from), b=nodeCenter(lk.to);
+    const dx=b.x-a.x, dy=b.y-a.y, dist=Math.hypot(dx,dy)||1;
+    const ex=b.x-dx/dist*95, ey=b.y-dy/dist*95;           // stop before target
+    const sx=a.x+dx/dist*80, sy=a.y+dy/dist*70;
+    const mx=(sx+ex)/2, my=(sy+ey)/2 - Math.min(80,dist*.15);
+    const d=`M${sx},${sy} Q${mx},${my} ${ex},${ey}`;
+    const hit=document.createElementNS('http://www.w3.org/2000/svg','path');
+    hit.setAttribute('d',d); hit.setAttribute('class','hit'); hit.setAttribute('fill','none');
+    hit.setAttribute('stroke','transparent'); hit.setAttribute('stroke-width','16');
+    hit.addEventListener('click',ev=>{ev.stopPropagation(); if(confirm('Delete this connection?')){links.splice(i,1);drawLinks();save();}});
+    const p=document.createElementNS('http://www.w3.org/2000/svg','path');
+    p.setAttribute('d',d); p.setAttribute('fill','none'); p.setAttribute('stroke','#8a8a96');
+    p.setAttribute('stroke-width','2'); p.setAttribute('marker-end','url(#arrow)');
+    svg.appendChild(hit); svg.appendChild(p);
+  });
+}
+const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+/* ============================================================
+   INTERACTION
+   ============================================================ */
+let drag=null, lastX=0, lastY=0, movedDist=0;
+function attach(el,id){
+  el.addEventListener('pointerdown',e=>{
+    e.stopPropagation();
+    if(linkMode){ return; }
+    drag={kind:'node',id}; lastX=e.clientX; lastY=e.clientY; movedDist=0;
+    el.setPointerCapture(e.pointerId);
+  });
+  el.addEventListener('click',e=>{
+    e.stopPropagation();
+    if(linkMode){ handleLinkClick(id); return; }
+    if(movedDist>4) return;
+    select(id);
+  });
+  el.addEventListener('dblclick',e=>{
+    e.stopPropagation();
+    select(id);
+    if(nodes[id].type==='passage'){ setTimeout(()=>{const t=document.getElementById('pTitle'); if(t)t.focus();},60); }
+  });
+}
+vp.addEventListener('pointerdown',e=>{
+  if(linkMode){ return; }
+  drag={kind:'pan'}; lastX=e.clientX; lastY=e.clientY; vp.classList.add('panning');
+});
+window.addEventListener('pointermove',e=>{
+  if(!drag)return;
+  const dx=e.clientX-lastX, dy=e.clientY-lastY; lastX=e.clientX; lastY=e.clientY;
+  movedDist+=Math.abs(dx)+Math.abs(dy);
+  if(drag.kind==='pan'){ view.x+=dx; view.y+=dy; applyView(); }
+  else{ const n=nodes[drag.id]; n.x+=dx/view.z; n.y+=dy/view.z; updatePos(drag.id); drawLinks(); }
+});
+window.addEventListener('pointerup',()=>{
+  if(drag){ if(drag.kind==='node'&&movedDist>4) save(); if(drag.kind==='pan') save(); }
+  drag=null; vp.classList.remove('panning');
+});
+vp.addEventListener('click',()=>{ if(linkMode){ linkSrc=null; refreshSelClasses(); } else { select(null); } });
+vp.addEventListener('wheel',e=>{
+  e.preventDefault();
+  const r=vp.getBoundingClientRect(); const mx=e.clientX-r.left, my=e.clientY-r.top;
+  const wx=(mx-view.x)/view.z, wy=(my-view.y)/view.z;
+  view.z=Math.min(2.2,Math.max(.3, view.z*(e.deltaY<0?1.1:1/1.1)));
+  view.x=mx-wx*view.z; view.y=my-wy*view.z; applyView(); save();
+},{passive:false});
+
+function zoomBy(f){
+  const r=vp.getBoundingClientRect(), cx=r.width/2, cy=r.height/2;
+  const wx=(cx-view.x)/view.z, wy=(cy-view.y)/view.z;
+  view.z=Math.min(2.2,Math.max(.3,view.z*f));
+  view.x=cx-wx*view.z; view.y=cy-wy*view.z; applyView(); save();
+}
+function fitView(){
+  const xs=[],ys=[];
+  for(const id in nodes){const el=document.getElementById('el_'+id);
+    xs.push(nodes[id].x); ys.push(nodes[id].y);
+    xs.push(nodes[id].x+(el?el.offsetWidth:170)); ys.push(nodes[id].y+(el?el.offsetHeight:130));}
+  if(!xs.length)return;
+  const minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys);
+  const r=vp.getBoundingClientRect();
+  const z=Math.min(1.3,(r.width-80)/(maxX-minX),(r.height-80)/(maxY-minY));
+  view.z=Math.max(.3,z);
+  view.x=(r.width-(maxX-minX)*view.z)/2 - minX*view.z;
+  view.y=(r.height-(maxY-minY)*view.z)/2 - minY*view.z;
+  applyView(); save();
+}
+
+/* ----- linking ----- */
+function toggleLink(){
+  linkMode=!linkMode; linkSrc=null;
+  document.getElementById('btnConnect').classList.toggle('on',linkMode);
+  vp.classList.toggle('linking',linkMode);
+  refreshSelClasses();
+}
+function handleLinkClick(id){
+  if(linkSrc===null){ linkSrc=id; }
+  else if(linkSrc!==id){
+    if(!links.some(l=>l.from===linkSrc&&l.to===id)) links.push({from:linkSrc,to:id});
+    linkSrc=null; drawLinks(); save();
+  } else { linkSrc=null; }
+  refreshSelClasses();
+}
+function refreshSelClasses(){
+  for(const id in nodes){const el=document.getElementById('el_'+id); if(!el)continue;
+    el.classList.toggle('sel',sel===id);
+    el.classList.toggle('linksrc',linkSrc===id);
+    el.classList.toggle('startnode', startNode===id&&nodes[id].type==='passage');
+  }
+}
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){ if(linkMode)toggleLink(); closeInsp(); ['theory','argue','play'].forEach(closeOv); }
+  if((e.key==='Delete'||e.key==='Backspace')&&sel&&!/INPUT|TEXTAREA/.test(document.activeElement.tagName)){ deleteNode(sel); }
+});
+
+/* ----- add / delete passage ----- */
+function addPassage(){
+  const r=vp.getBoundingClientRect();
+  const cx=(r.width/2-view.x)/view.z, cy=(r.height/2-view.y)/view.z;
+  const id='n'+(nextId++);
+  nodes[id]={id,type:'passage',title:'New note',text:'',x:cx-100,y:cy-40};
+  buildNodes(); select(id); save();
+  setTimeout(()=>{const t=document.getElementById('pTitle'); if(t){t.focus();t.select();}},60);
+}
+function deleteNode(id){
+  if(nodes[id].type==='image'){ if(!confirm('Remove this photo from the canvas? (You can Reset to bring them all back.)')) return; }
+  delete nodes[id];
+  links=links.filter(l=>l.from!==id&&l.to!==id);
+  if(startNode===id)startNode=null;
+  if(sel===id){sel=null;closeInsp();}
+  buildNodes(); save();
+}
+
+/* ============================================================
+   INSPECTOR
+   ============================================================ */
+function select(id){
+  sel=id; refreshSelClasses();
+  const insp=document.getElementById('insp'), body=document.getElementById('inspBody');
+  if(!id){ insp.classList.remove('open'); return; }
+  const n=nodes[id];
+  const conns=links.filter(l=>l.from===id).map((l,idx)=>`<div class="conn">→ ${esc(nodes[l.to]?.title||'?')}
+     <span class="x" onclick="rmLink('${id}','${l.to}')">unlink</span></div>`).join('')||'<div class="conn" style="color:#666">no outgoing arrows yet</div>';
+  if(n.type==='image'){
+    const g=n.data;
+    body.innerHTML=`<h2>${esc(n.title)}</h2>
+      <div class="mono" style="font-size:11px;color:var(--muted)">${n.file} · ${g.cl}</div>
+      <img src="${IMGBASE}${n.file}" alt="">
+      <div class="cca">
+        <div class="cell"><div class="k">Concept</div><div class="v">${g.c}</div></div>
+        <div class="cell"><div class="k c2">Context</div><div class="v">${g.x}</div></div>
+        <div class="cell"><div class="k c3">Abstraction</div><div class="v">${g.a}</div></div>
+      </div>
+      <label>Tag a lens</label>
+      <div>${Object.keys(LENSES).map(k=>`<span class="lenschip" onclick="setLens('${id}','${k}')" style="${n.lens===k?'border-color:var(--accent);background:#2a2412':''}">${LENSES[k].name}</span>`).join('')}</div>
+      ${n.lens?`<p class="mono" style="font-size:11px;color:var(--ctx);margin-top:8px">Tagged: ${LENSES[n.lens].who} <span class="lenschip" onclick="openTheory('${n.lens}')">read ↗</span></p>`:''}
+      <label>Outgoing story arrows</label>${conns}
+      <div class="btnrow">
+        <button class="btn g" onclick="beginLinkFrom('${id}')">↳ Draw arrow from here</button>
+        <button class="btn d" onclick="deleteNode('${id}')">Remove</button>
+      </div>`;
+  }else{
+    body.innerHTML=`<h2>Note</h2>
+      <label>Title</label><input id="pTitle" value="${esc(n.title)}" oninput="editPassage('${id}')">
+      <label>Your argument / beat</label>
+      <textarea id="pText" oninput="editPassage('${id}')" placeholder="Write the claim this beat makes. Reference images by name, e.g. the bus (IMG_3913)…">${esc(n.text)}</textarea>
+      <label>Outgoing story arrows</label>${conns}
+      <div class="btnrow">
+        <button class="btn g" onclick="beginLinkFrom('${id}')">↳ Draw arrow from here</button>
+        <button class="btn g" onclick="setStart('${id}')">${startNode===id?'★ Start of story':'Set as story start'}</button>
+        <button class="btn d" onclick="deleteNode('${id}')">Delete</button>
+      </div>`;
+  }
+  insp.classList.add('open');
+}
+function closeInsp(){document.getElementById('insp').classList.remove('open'); sel=null; refreshSelClasses();}
+function editPassage(id){
+  nodes[id].title=document.getElementById('pTitle').value;
+  nodes[id].text=document.getElementById('pText').value;
+  const el=document.getElementById('el_'+id);
+  if(el){el.querySelector('.ntitle').textContent=nodes[id].title||'Untitled';
+    el.querySelector('.nbody').textContent=nodes[id].text||'Double-click to write your argument…';}
+  save();
+}
+function setLens(id,k){ nodes[id].lens = nodes[id].lens===k?null:k; buildNodes(); select(id); save(); }
+function setStart(id){ startNode = startNode===id?null:id; refreshSelClasses(); select(id); save(); }
+function rmLink(from,to){ links=links.filter(l=>!(l.from===from&&l.to===to)); drawLinks(); select(from); save(); }
+function beginLinkFrom(id){ if(!linkMode)toggleLink(); linkSrc=id; refreshSelClasses(); }
+
+/* ============================================================
+   THEORY / ARGUE / PLAY overlays
+   ============================================================ */
+function openTheory(focus){
+  document.getElementById('lensList').innerHTML=Object.keys(LENSES).map(k=>{
+    const L=LENSES[k];
+    return `<div class="lensblock" id="lb_${k}">
+      <div style="font-size:17px;font-weight:600">${L.name}${L.updated?'<span class="updated">updated source</span>':''}</div>
+      <div class="who">${L.who}</div>
+      <p>${L.idea}</p>
+      <blockquote>${L.quote}<cite>${L.cite}</cite></blockquote></div>`;
+  }).join('');
+  openOv('theory');
+  if(typeof focus==='string'&&LENSES[focus]) setTimeout(()=>document.getElementById('lb_'+focus)?.scrollIntoView({behavior:'smooth',block:'center'}),80);
+}
+function openOv(id){document.getElementById(id).classList.add('open');}
+function closeOv(id){document.getElementById(id).classList.remove('open');}
+
+const ARG='msi_arg_v1';
+function openArgue(){
+  const s=JSON.parse(localStorage.getItem(ARG)||'{}');
+  ['claim','ev','cm','sw'].forEach(k=>{const e=document.getElementById('a_'+k); if(e)e.value=s[k]||'';});
+  const opts=Object.keys(LENSES).map(k=>`<option value="${k}">${LENSES[k].name}</option>`).join('');
+  document.getElementById('a_l1').innerHTML=opts; document.getElementById('a_l2').innerHTML=opts;
+  if(s.l1)document.getElementById('a_l1').value=s.l1; if(s.l2)document.getElementById('a_l2').value=s.l2;
+  openOv('argue');
+}
+function saveArg(){
+  localStorage.setItem(ARG,JSON.stringify({
+    claim:v('a_claim'),l1:v('a_l1'),l2:v('a_l2'),ev:v('a_ev'),cm:v('a_cm'),sw:v('a_sw')}));
+}
+const v=id=>document.getElementById(id)?.value||'';
+function exportArg(){
+  const s=JSON.parse(localStorage.getItem(ARG)||'{}'); const L=k=>LENSES[k]?LENSES[k].name+' — '+LENSES[k].who:'';
+  let t='MACHINES & IDENTITY — Argument Worksheet\n=========================================\n\n';
+  t+=`CLAIM:\n${s.claim||''}\n\nFRAMEWORKS:\n1) ${L(s.l1)}\n2) ${L(s.l2)}\n\nEVIDENCE:\n${s.ev||''}\n\nCOUNTER-MOVE:\n${s.cm||''}\n\nSTAKES:\n${s.sw||''}\n`;
+  dl('argument-worksheet.txt',t);
+}
+
+/* ----- play mode: traverse the map ----- */
+function openPlay(){ playAt(startNode || firstNode()); openOv('play'); }
+function firstNode(){ const ids=Object.keys(nodes); return ids[0]||null; }
+function playAt(id){
+  const body=document.getElementById('playBody');
+  if(!id||!nodes[id]){ body.innerHTML='<h1>Empty story</h1><p>Add a passage note, connect some images, then set a start point.</p>'; return; }
+  const n=nodes[id];
+  const outs=links.filter(l=>l.from===id);
+  let html='';
+  if(n.type==='image'){
+    const g=n.data;
+    html+=`<div class="mono" style="font-size:11px;color:var(--muted)">${n.file}</div><h1>${esc(n.title)}</h1>
+      <img src="${IMGBASE}${n.file}">
+      <p><b style="color:var(--accent)">Concept.</b> ${g.c} <b style="color:var(--ctx)">Context.</b> ${g.x} <b style="color:var(--abs)">Abstraction.</b> ${g.a}</p>`;
+  }else{
+    html+=`<h1>${esc(n.title||'Untitled')}</h1><p>${esc(n.text||'').replace(/\n/g,'<br>')||'<i>(empty note)</i>'}</p>`;
+  }
+  if(outs.length){ html+='<div style="margin-top:16px">'+outs.map(l=>`<button class="playchoice" onclick="playAt('${l.to}')"><span class="a">→</span>${esc(nodes[l.to]?.title||'?')}</button>`).join('')+'</div>'; }
+  else { html+='<p class="mono" style="color:var(--muted);margin-top:16px">— end of this branch —</p>'; }
+  html+=`<div class="btnrow" style="margin-top:18px"><button class="btn g" onclick="openPlay()">↺ Restart</button><button class="btn g" onclick="closeOv('play')">Close</button></div>`;
+  body.innerHTML=html;
+}
+
+/* ----- export / reset ----- */
+function exportMenu(){
+  const choice=prompt('Export as:\n  1 = Twine .twee (import into Twinery)\n  2 = JSON (your full map)\n  3 = Argument write-up .txt\n\nType 1, 2, or 3:');
+  if(choice==='1')exportTwee(); else if(choice==='2')exportJSON(); else if(choice==='3')exportArg();
+}
+function exportTwee(){
+  let out=':: StoryTitle\nThe Machine Read the Archive\n\n';
+  if(startNode&&nodes[startNode]) out=':: StoryData\n{"start":"'+(nodes[startNode].title||'Start')+'"}\n\n'+out;
+  for(const id in nodes){const n=nodes[id];
+    const outs=links.filter(l=>l.from===id).map(l=>`[[${(nodes[l.to]?.title||'?')}]]`).join('\n');
+    let bodyTxt = n.type==='image'
+      ? `(image: ${IMGBASE}${n.file})\nConcept: ${n.data.c}\nContext: ${n.data.x}\nAbstraction: ${n.data.a}`
+      : (n.text||'');
+    out+=`:: ${n.title||('Passage '+id)}\n${bodyTxt}\n${outs?'\n'+outs:''}\n\n`;
+  }
+  dl('machines-and-identity.twee',out);
+}
+function exportJSON(){ save(); dl('story-map.json', localStorage.getItem(KEY)); }
+function dl(name,text){const b=new Blob([text],{type:'text/plain'});const u=URL.createObjectURL(b);
+  const a=document.createElement('a');a.href=u;a.download=name;a.click();URL.revokeObjectURL(u);}
+function resetLayout(){
+  if(!confirm('Reset the canvas to all 50 photos in a grid? This clears your arrows and notes.'))return;
+  localStorage.removeItem(KEY); defaultLayout(); buildNodes(); fitView(); save();
+}
+
+/* ============================================================
+   BOOT
+   ============================================================ */
+if(!loadSaved()) defaultLayout();
+applyView(); buildNodes();
+if(view.x===40&&view.y===30) fitView();
+</script>
+</body>
+</html>
