@@ -743,10 +743,52 @@ function seedExample(){
   save();
 }
 
-/* ----- export / reset ----- */
+/* ----- export ----- */
 function exportMenu(){
-  const choice=prompt('Export as:\n  1 = Twine .twee (import into Twinery)\n  2 = JSON (your full map)\n  3 = Argument write-up .txt\n\nType 1, 2, or 3:');
-  if(choice==='1')exportTwee(); else if(choice==='2')exportJSON(); else if(choice==='3')exportArg();
+  const c=prompt('Keep a record — export as:\n  1 = Word document (.docx) — your connections & notes\n  2 = Text file (.txt) — your connections & notes\n  3 = Twine story (.twee) — import into Twinery\n  4 = Full map (.json) — reload later\n  5 = Argument worksheet (.txt)\n\nType 1–5:');
+  if(c==='1')exportRecordDocx(); else if(c==='2')exportRecordTxt();
+  else if(c==='3')exportTwee(); else if(c==='4')exportJSON(); else if(c==='5')exportArg();
+}
+function labelOf(n){ return n.type==='image' ? `${n.title} (${n.file})` : (n.title||'Note'); }
+function recordParas(){
+  const P=[]; const push=(text,bold)=>P.push({text,bold:!!bold});
+  push('The Machine Read the Archive — Story Record', true);
+  push(new Date().toLocaleString());
+  push('');
+  push('YOUR CONNECTIONS (each is a unique story you authored)', true);
+  if(!links.length) push('(no connections yet)');
+  links.forEach((l,i)=>{
+    const A=nodes[l.from], B=nodes[l.to]; if(!A||!B) return;
+    const s=mergeStarter(l.from,l.to);
+    push(`${i+1}. ${labelOf(A)}  →  ${labelOf(B)}`, true);
+    if(l.story) push('Your story: '+l.story);
+    push('Merged concept: '+(l.mc||s.c));
+    push('Merged context: '+(l.mx||s.x));
+    push('Merged abstraction: '+(l.ma||s.a));
+    const lenses=[...new Set([A.lens,B.lens].filter(k=>k&&LENSES[k]).map(k=>LENSES[k].name))];
+    if(lenses.length) push('Lenses in play: '+lenses.join('; '));
+    push('');
+  });
+  const notesArr=Object.values(nodes).filter(n=>n.type==='passage');
+  if(notesArr.length){
+    push('YOUR NOTES', true);
+    notesArr.forEach(n=>{ push(n.title||'Note', true); if(n.text) push(n.text); push(''); });
+  }
+  const arg=JSON.parse(localStorage.getItem(ARG)||'{}');
+  if(arg.claim||arg.ev||arg.cm||arg.sw){
+    push('ARGUMENT', true);
+    if(arg.claim) push('Claim: '+arg.claim);
+    if(arg.l1&&LENSES[arg.l1]) push('Framework 1: '+LENSES[arg.l1].name+' — '+LENSES[arg.l1].who);
+    if(arg.l2&&LENSES[arg.l2]) push('Framework 2: '+LENSES[arg.l2].name+' — '+LENSES[arg.l2].who);
+    if(arg.ev) push('Evidence: '+arg.ev);
+    if(arg.cm) push('Counter-move: '+arg.cm);
+    if(arg.sw) push('Stakes: '+arg.sw);
+  }
+  return P;
+}
+function exportRecordTxt(){
+  const t=recordParas().map(p=>p.bold?p.text.toUpperCase():p.text).join('\n');
+  dl('my-connections.txt', t);
 }
 function exportTwee(){
   let out=':: StoryTitle\nThe Machine Read the Archive\n\n';
@@ -765,11 +807,77 @@ function exportTwee(){
   dl('machines-and-identity.twee',out);
 }
 function exportJSON(){ save(); dl('story-map.json', localStorage.getItem(KEY)); }
-function dl(name,text){const b=new Blob([text],{type:'text/plain'});const u=URL.createObjectURL(b);
-  const a=document.createElement('a');a.href=u;a.download=name;a.click();URL.revokeObjectURL(u);}
+function dl(name,text){ dlBlob(name, new Blob([text],{type:'text/plain'})); }
+function dlBlob(name,blob){const u=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1500);}
+
+/* ----- minimal .docx (OOXML) writer, no libraries ----- */
+const CRC_TABLE=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0;}return t;})();
+function crc32(buf){let crc=0xFFFFFFFF;for(let i=0;i<buf.length;i++)crc=(crc>>>8)^CRC_TABLE[(crc^buf[i])&0xFF];return (crc^0xFFFFFFFF)>>>0;}
+function zipStore(files){
+  const enc=new TextEncoder(), parts=[]; let offset=0; const central=[];
+  const u16=n=>[n&0xFF,(n>>>8)&0xFF], u32=n=>[n&0xFF,(n>>>8)&0xFF,(n>>>16)&0xFF,(n>>>24)&0xFF];
+  files.forEach(f=>{
+    const name=enc.encode(f.name), data=f.data, crc=crc32(data), sz=data.length;
+    const lh=new Uint8Array([].concat(u32(0x04034b50),u16(20),u16(0),u16(0),u16(0),u16(0),u32(crc),u32(sz),u32(sz),u16(name.length),u16(0)));
+    parts.push(lh,name,data);
+    central.push({name,crc,sz,offset});
+    offset+=lh.length+name.length+data.length;
+  });
+  const cd=[]; let cdSize=0;
+  central.forEach(c=>{
+    const h=new Uint8Array([].concat(u32(0x02014b50),u16(20),u16(20),u16(0),u16(0),u16(0),u16(0),u32(c.crc),u32(c.sz),u32(c.sz),u16(c.name.length),u16(0),u16(0),u16(0),u16(0),u32(0),u32(c.offset)));
+    cd.push(h,c.name); cdSize+=h.length+c.name.length;
+  });
+  const end=new Uint8Array([].concat(u32(0x06054b50),u16(0),u16(0),u16(central.length),u16(central.length),u32(cdSize),u32(offset),u16(0)));
+  const all=[...parts,...cd,end], total=all.reduce((s,a)=>s+a.length,0), out=new Uint8Array(total);
+  let p=0; all.forEach(a=>{out.set(a,p);p+=a.length;});
+  return out;
+}
+function xmlEsc(s){return (s||'').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function exportRecordDocx(){
+  const paras=recordParas().map(p=>{
+    if(p.text==='') return '<w:p/>';
+    const rpr=p.bold?'<w:rPr><w:b/></w:rPr>':'';
+    return `<w:p><w:r>${rpr}<w:t xml:space="preserve">${xmlEsc(p.text)}</w:t></w:r></w:p>`;
+  }).join('');
+  const doc=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>`+
+    `<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${paras}<w:sectPr/></w:body></w:document>`;
+  const ct=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>`+
+    `<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">`+
+    `<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>`+
+    `<Default Extension="xml" ContentType="application/xml"/>`+
+    `<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>`;
+  const rels=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>`+
+    `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">`+
+    `<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>`;
+  const enc=new TextEncoder();
+  const zip=zipStore([
+    {name:'[Content_Types].xml', data:enc.encode(ct)},
+    {name:'_rels/.rels', data:enc.encode(rels)},
+    {name:'word/document.xml', data:enc.encode(doc)}
+  ]);
+  dlBlob('my-connections.docx', new Blob([zip],{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'}));
+}
+
+/* ----- reset / re-order ----- */
 function resetLayout(){
-  if(!confirm('Reset the canvas to all 50 photos in a grid? This clears your arrows and notes.'))return;
-  localStorage.removeItem(KEY); defaultLayout(); buildNodes(); fitView(); save();
+  const c=prompt('Reset options:\n  1 = Re-order all photos to the ORIGINAL grid (keeps your connections & notes)\n  2 = FULL reset — restore the original archive and ERASE all connections & notes\n\nType 1 or 2:');
+  if(c==='1') retileImages(); else if(c==='2') fullReset();
+}
+function retileImages(){
+  const COLS=6, XW=196, YH=176;
+  GALLERY.forEach((g,i)=>{
+    const x=(i%COLS)*XW+30, y=Math.floor(i/COLS)*YH+30;
+    const id=Object.keys(nodes).find(k=>nodes[k].file===g.f);
+    if(id){ nodes[id].x=x; nodes[id].y=y; }
+    else { const nid='n'+(nextId++); nodes[nid]={id:nid,type:'image',file:g.f,title:g.t,x,y,lens:anchorLens[g.f]||null,data:g}; }
+  });
+  closePop(); buildNodes(); fitView(); save();
+}
+function fullReset(){
+  if(!confirm('FULL reset: this erases ALL connections and notes and restores the original 50-photo archive. Continue?'))return;
+  localStorage.removeItem(KEY); defaultLayout(); closePop(); buildNodes(); fitView(); save();
 }
 
 /* ============================================================
