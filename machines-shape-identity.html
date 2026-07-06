@@ -114,6 +114,28 @@
     font-family:ui-monospace,Menlo,monospace;font-size:13px;color:var(--accent)}
   .progressbar{height:3px;background:var(--line);border-radius:2px;overflow:hidden;margin:6px 0 0}
   .progressbar > div{height:100%;background:var(--accent);width:0;transition:.3s}
+
+  /* photographs + gallery */
+  figure.photo{margin:22px 0;border:1px solid var(--line);background:#000;border-radius:3px;overflow:hidden}
+  figure.photo img{display:block;width:100%;height:auto}
+  figure.photo figcaption{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--muted);
+    padding:8px 12px;border-top:1px solid var(--line);letter-spacing:.06em;text-transform:uppercase}
+  .cca{border:1px solid var(--line);border-radius:3px;margin:18px 0;overflow:hidden}
+  .cca .cell{padding:12px 16px;border-top:1px solid var(--line)}
+  .cca .cell:first-child{border-top:none}
+  .cca .k{font-family:ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--accent);margin-bottom:3px}
+  .cca .k.ctx{color:var(--accent2)}
+  .cca .k.abs{color:#a98fc0}
+  .cca .v{font-size:15.5px}
+  .ctxword{color:var(--accent2)} .absword{color:#a98fc0}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin:22px 0}
+  .gcard{border:1px solid var(--line);background:var(--panel);border-radius:3px;overflow:hidden;
+    cursor:pointer;transition:.15s;text-align:left;padding:0;color:var(--ink);font-family:inherit}
+  .gcard:hover{border-color:var(--accent);transform:translateY(-2px)}
+  .gcard img{display:block;width:100%;height:120px;object-fit:cover}
+  .gcard .lab{padding:6px 8px;font-family:ui-monospace,Menlo,monospace;font-size:10px;color:var(--muted);
+    letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 </style>
 </head>
 <body>
@@ -122,6 +144,7 @@
     <span class="brand">The Machine Read the Archive</span>
     <div class="lenses" id="lensDots" title="Theoretical lenses engaged"></div>
     <button class="nav" onclick="go('start')">Story</button>
+    <button class="nav" onclick="go('gallery')">Gallery</button>
     <button class="nav" onclick="go('notes')">Field Notes</button>
     <button class="nav" onclick="go('builder')">Build</button>
     <button class="nav" onclick="go('argue')">Argue</button>
@@ -222,14 +245,25 @@ P.archive = {title:'The Archive', body:`
 </div>
 <hr class="sep">
 <div class="choices">
+  <button class="choice" onclick="go('gallery')"><span class="arrow">▦</span>See all 50 photographs with Concept / Context / Abstraction</button>
   <button class="choice" onclick="go('lenshub')"><span class="arrow">◆</span>Choose / switch theoretical lens</button>
 </div>`};
 
 /* ---------- IMAGE-ANCHOR PASSAGES ---------- */
-function imgPassage({id,title,tags,machine,see,ask,gatherText,links}){
+const IMGBASE='assets/img/';
+function ccaBlock(c){
+  return `<div class="cca">
+    <div class="cell"><div class="k">Concept — what it is</div><div class="v">${c.concept}</div></div>
+    <div class="cell"><div class="k ctx">Context — where / when / why</div><div class="v">${c.context}</div></div>
+    <div class="cell"><div class="k abs">Abstraction — how it is rendered</div><div class="v">${c.abstraction}</div></div>
+  </div>`;
+}
+function imgPassage({id,title,tags,file,cca,machine,see,ask,gatherText,links}){
   return {title, body:`
   <h3>Image · ${title}</h3>
   <div class="tagrow">${tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div>
+  <figure class="photo"><img loading="lazy" src="${IMGBASE}${file}" alt="${title}"><figcaption>${file}</figcaption></figure>
+  ${ccaBlock(cca)}
   <div class="plate machine"><span class="cap">How the machine described it</span><p style="margin-bottom:0">${machine}</p></div>
   <p>${see}</p>
   <div class="plate prompt"><span class="cap">Ask</span><p style="margin-bottom:0">${ask}</p></div>
@@ -249,6 +283,12 @@ const escapeAttr = s => s.replace(/'/g,"\\'").replace(/"/g,'&quot;');
 P.image_church = imgPassage({
   id:'image_church', title:'Sacred / Surveilled',
   tags:['Birmingham','1963 bombing','security cameras'],
+  file:'IMG_3722.jpg',
+  cca:{
+    concept:'The cross-shaped “16th St. Baptist Church” marquee — with a modern security camera bolted to the brick just beneath it.',
+    context:'Birmingham, Alabama. This church was bombed by the Klan in 1963, killing four girls; today it is a National Historic Landmark under surveillance.',
+    abstraction:'The iconic neon cross rises against a bright sky; the small camera is left in frame as a quiet, loaded detail rather than cropped away.'
+  },
   machine:'“16th Street Baptist Church: exterior towers, the iconic cross-shaped marquee… This church was bombed in 1963, killing four girls.”',
   see:'Look again at the marquee photo: a modern <strong>security camera</strong> is bolted to the brick beneath the cross. A site of anti-Black terror is now watched by a machine. The camera promises protection — but surveillance and protection have never meant the same thing for Black communities.',
   ask:'When a machine “watches” a Black sacred space, is it guarding the congregation or archiving them? Who is the camera <em>for</em>?',
@@ -259,6 +299,12 @@ P.image_church = imgPassage({
 P.image_memorial = imgPassage({
   id:'image_memorial', title:'The Named & the Counted',
   tags:['Montgomery','EJI','lynching memorial','the archive'],
+  file:'IMG_3819.jpg',
+  cca:{
+    concept:'A close-up of a steel monument engraved with a victim’s name and date: “Maceo Snipes, 07.18.1946.”',
+    context:'The National Memorial for Peace and Justice (EJI), Montgomery. Snipes, a Black WWII veteran, was killed a day after voting in Georgia.',
+    abstraction:'Shallow focus isolates the incised name while the corridor of columns falls away — turning an act of record-keeping into something intimate.'
+  },
   machine:'“Hanging corten-steel monuments engraved with county names and victims… a close-up of victim ‘Maceo Snipes, 07.18.1946’… the closing inscription ‘They are all honored here.’”',
   see:'The memorial exists precisely because a machinery of record-keeping once refused to name these people — or named them only as statistics, as property, as “unknown.” The engraving of <em>Maceo Snipes</em> is a counter-data act: turning a body that a system tried to erase back into a name.',
   ask:'Machines love to count. But counting can honor <em>or</em> flatten. What is the difference between the steel column that names Maceo Snipes and a spreadsheet cell that logs him?',
@@ -269,6 +315,12 @@ P.image_memorial = imgPassage({
 P.image_mother = imgPassage({
   id:'image_mother', title:'The Body in Chains',
   tags:['sculpture','enslavement','race + gender + class'],
+  file:'IMG_3812.jpg',
+  cca:{
+    concept:'A bronze sculpture of an enslaved mother in chains, holding her child, with other shackled figures behind her.',
+    context:'A memorial to enslavement among Montgomery’s legacy sites, marking the domestic slave trade that ran through Alabama.',
+    abstraction:'A low angle and a bruised, stormy sky monumentalize her; wet pavement mirrors the chains, doubling the weight.'
+  },
   machine:'“A bronze memorial sculpture of an enslaved mother in chains holding her child.”',
   see:'The machine names three facts — enslaved, mother, chained — and moves on. But those three facts are not separable. Her oppression is not race <em>plus</em> gender <em>plus</em> the economics of slavery stacked in a list. It is all of them fused into a single lived condition the law built specifically for her.',
   ask:'A single-axis machine would tag this image “race” or “gender” or “history.” What does it lose by refusing to hold all of them at once? Whose experience disappears in the gap?',
@@ -279,6 +331,12 @@ P.image_mother = imgPassage({
 P.image_bus = imgPassage({
   id:'image_bus', title:'The Machine of Refusal',
   tags:['Montgomery Bus Boycott','technology','1955'],
+  file:'IMG_3913.jpg',
+  cca:{
+    concept:'A gleaming, restored 1950s-era city transit bus parked on a brick street.',
+    context:'The Rosa Parks Museum, Montgomery — the bus is the emblem of the 1955–56 Montgomery Bus Boycott, where segregation was enforced by a seating chart.',
+    abstraction:'HDR processing and a low, heroic angle make the chrome machine gleam; herringbone pavers pull the eye straight to it.'
+  },
   machine:'“A beautifully restored 1950s-era transit bus… almost certainly at the Rosa Parks Museum. From inside, showing the historic photo frieze above the seats.”',
   see:'The bus is itself a <strong>machine that shaped identity</strong>: its rows were engineered to sort bodies by race. Segregation wasn’t only law — it was infrastructure, hardware, a seating chart enforced by a driver. Rosa Parks did not hack the software of Jim Crow; she refused the machine physically, with her body, in a seat.',
   ask:'If a 1955 bus encoded racial hierarchy into steel and rules, what do <em>today’s</em> machines encode into code and defaults — and can you still refuse from a seat?',
@@ -289,6 +347,12 @@ P.image_bus = imgPassage({
 P.image_selfie = imgPassage({
   id:'image_selfie', title:'Face to Face',
   tags:['Rosa Parks statue','the gaze','the phone'],
+  file:'IMG_3887.jpg',
+  cca:{
+    concept:'A visitor sits directly across from the bronze bust of Rosa Parks, the two faces in profile as if in conversation.',
+    context:'A museum display in Montgomery; the encounter is mediated and recorded by a phone camera.',
+    abstraction:'The living face and the cast face mirror each other against a plain wall — a composed doubling of witness and icon.'
+  },
   machine:'“A warm personal moment: someone sitting face-to-face with the Rosa Parks bronze bust as if in conversation… a hand raising a phone toward the statue.”',
   see:'A living person and a bronze icon look at each other — and a <strong>phone</strong> (a machine, a camera, a network) mediates the encounter. The moment only becomes “real,” archivable, shareable, when a machine witnesses it. The device doesn’t just record the memory; it participates in shaping who the visitor becomes in relation to Parks.',
   ask:'The camera turns a private moment of recognition into content. Does the machine deepen the visitor’s identification with Parks — or does it convert reverence into a performance for an algorithmic audience?',
@@ -299,6 +363,12 @@ P.image_selfie = imgPassage({
 P.image_beluga = imgPassage({
   id:'image_beluga', title:'Human / Animal / Machine',
   tags:['aquarium','reflection','boundaries'],
+  file:'IMG_3557.jpg',
+  cca:{
+    concept:'A beluga whale behind aquarium glass, overlaid with the faint reflection of a human face.',
+    context:'A large aquarium (consistent with the Georgia Aquarium); the viewing glass doubles as a mirror.',
+    abstraction:'Long exposure and haze fuse whale, glass, and human into a single ghostly double-exposure — the boundaries dissolve.'
+  },
   machine:'“A ghostly double-exposure with a reflection of a person’s face superimposed” over a beluga whale behind glass.',
   see:'In one frame: a captive animal, a pane of engineered glass, and a human face that the machine could not fully separate from either. Haraway would love this image. It is a cyborg image — the boundaries between human, animal, and apparatus dissolve, and the machine’s confusion <em>reveals</em> those boundaries were never as solid as we pretend.',
   ask:'The machine treated the human face as part of the whale. What if that “error” is actually true — that our identities are already merged with the machines and enclosures we look through?',
@@ -309,6 +379,12 @@ P.image_beluga = imgPassage({
 P.image_sidewalk = imgPassage({
   id:'image_sidewalk', title:'“Unsentimental Contrast”',
   tags:['Montgomery','present-day','class','composition'],
+  file:'IMG_3919.jpg',
+  cca:{
+    concept:'A person sleeping against a storefront window while other pedestrians walk past down the block.',
+    context:'A present-day Montgomery sidewalk — the same streets the Movement marched, where economic inequality persists.',
+    abstraction:'A hard diagonal of shadow splits the frame, placing the figure at the exact edge of light and dark.'
+  },
   machine:'“A person sleeping against a storefront window — a stark, unsentimental contrast between the movement’s promises and present-day inequality still visible on the same streets.”',
   see:'Here the machine turns a human being into a <strong>rhetorical device</strong> — a “contrast” that completes its essay about broken promises. The sleeping person has no name, no consent, no say. They are data conscripted into an argument. This is how machines shape identity at its coldest: by deciding whose suffering is <em>evidence</em> and whose is <em>subject</em>.',
   ask:'Data Feminism asks us to make the invisible labor and the invisible bodies visible. What would it mean to refuse to use this person as a “contrast” at all?',
@@ -409,6 +485,103 @@ P.about = {title:'How this works', body:`
 <div class="plate"><span class="cap">Everything you write is saved in this browser</span>
 <p style="margin-bottom:0">Field notes, passages, and your thesis persist via local storage. Use <strong>Export</strong> to back them up or hand them in. <em>Restart</em> clears the story path but keeps your writing until you clear it.</p></div>
 <div class="choices"><button class="choice" onclick="go('start')"><span class="arrow">←</span>Back to the beginning</button></div>`};
+
+/* ============================================================
+   FULL GALLERY — all 50 photographs, each read as
+   Concept / Context / Abstraction
+   ============================================================ */
+const GALLERY = [
+ {f:'IMG_2171.jpg',t:'Palm crown from below',cl:'Nature / night',c:'The radiating fronds of a palm seen straight up the trunk.',x:'A quiet outdoor pause, likely a resort or garden path.',a:'High-contrast monochrome flattens the fronds into a radial starburst against pure black.'},
+ {f:'IMG_2174.jpg',t:'Leaves in darkness',cl:'Nature / night',c:'Overlapping variegated leaves lit by a single source.',x:'A low-light nature study of ordinary foliage.',a:'Chiaroscuro turns leaves into folds of fabric or shells; the frame falls to black.'},
+ {f:'IMG_2189.jpg',t:'Dock lamp at night',cl:'Nature / night',c:'A caged maritime lamp glowing on a pier.',x:'A nighttime waterfront with distant shoreline lights.',a:'A luminous orb against deep negative space; background lights become soft bokeh.'},
+ {f:'IMG_3475.jpg',t:'Dolphins in light shafts',cl:'Aquarium',c:'Two dolphins gliding beneath the surface.',x:'A large aquarium (consistent with the Georgia Aquarium).',a:'God-rays and silhouette create an almost sacred, painterly underwater scene.'},
+ {f:'IMG_3478.jpg',t:'Water surface texture',cl:'Aquarium',c:'The rippled, bubble-flecked underside of the water’s surface.',x:'The same tank, camera aimed upward.',a:'A pure texture study — no clear subject, only pattern and tone.'},
+ {f:'IMG_3488.jpg',t:'Dolphin portrait (warm)',cl:'Aquarium',c:'A dolphin’s face pressed near the glass.',x:'An intimate encounter at the viewing window.',a:'Warm-toned close-up emphasizing the “smile” and direct eye contact.'},
+ {f:'IMG_3496.jpg',t:'Dolphin portrait (cool)',cl:'Aquarium',c:'A dolphin approaching with mouth open.',x:'Near the surface of the aquarium tank.',a:'Cool cyan monochrome and haze give a dreamlike, weightless feel.'},
+ {f:'IMG_3533.jpg',t:'Sea turtle',cl:'Aquarium',c:'A sea turtle gliding past a rock wall.',x:'An aquarium habitat.',a:'Direct eye contact with the lens against a pocked, textured backdrop.'},
+ {f:'IMG_3549.jpg',t:'Beluga on a log',cl:'Aquarium',c:'A beluga whale resting against a submerged log.',x:'An aquarium beluga habitat with artificial rockwork.',a:'A pale luminous body against a dark cave; soft sepia grade.'},
+ {f:'IMG_3550.jpg',t:'Beluga (blurred)',cl:'Aquarium',c:'A beluga curling through the water.',x:'The aquarium tank.',a:'Motion blur and grain render it as a ghostly white form.'},
+ {f:'IMG_3551.jpg',t:'Beluga (vertical)',cl:'Aquarium',c:'A beluga floating head-up.',x:'The tank, with surface reflections above.',a:'Hazy, high-key glow isolates the animal.'},
+ {f:'IMG_3557.jpg',t:'Beluga + reflected face',cl:'Aquarium',c:'A beluga overlaid with the reflection of a human face.',x:'Aquarium glass acting as a mirror.',a:'A ghostly double-exposure collapsing human, animal, and apparatus.'},
+ {f:'IMG_3657.jpg',t:'Gingerbread house display',cl:'Holiday stop',c:'A two-story decorated holiday “gingerbread” house.',x:'A hotel or mall atrium during the winter holidays.',a:'Ornate B&W detail set against a swirling patterned floor.'},
+ {f:'IMG_3717.jpg',t:'16th St. Baptist — exterior',cl:'Birmingham',c:'The brick towers and arched entrance of the church.',x:'Birmingham — site of the 1963 bombing that killed four girls.',a:'A dramatic low angle and darkened sky monumentalize the facade.'},
+ {f:'IMG_3722.jpg',t:'Church cross marquee (+ camera)',cl:'Birmingham',c:'The cross-shaped church sign, a security camera bolted below.',x:'A Civil Rights landmark now under modern surveillance.',a:'Iconic signage against sky; the camera is a quiet, telling detail.'},
+ {f:'IMG_3725.jpg',t:'Stained-glass skylight',cl:'Birmingham',c:'A coffered ceiling framing a stained-glass skylight.',x:'Inside the church sanctuary.',a:'A tilted, geometric composition; light used as architecture.'},
+ {f:'IMG_3729.jpg',t:'Pulpit & communion table',cl:'Birmingham',c:'Pulpit, open Bible, and organ pipes; “This do in remembrance of me.”',x:'The sanctuary — a space of worship and memory.',a:'Symmetrical, reverent framing centered on the cross.'},
+ {f:'IMG_3730.jpg',t:'Stained-glass windows',cl:'Birmingham',c:'A row of stained-glass windows above dark pews.',x:'The church interior.',a:'Receding perspective; luminous glass against shadowed wood.'},
+ {f:'IMG_3735.jpg',t:'Dome ceiling',cl:'On the trail',c:'A circular domed ceiling with radiating ribs and an oculus.',x:'An institutional or memorial rotunda.',a:'Perfect radial symmetry; near-abstract geometry.'},
+ {f:'IMG_3775.jpg',t:'“Bus Ride to Freedom”',cl:'Montgomery',c:'Museum title text seen through shattered glass.',x:'The Freedom Rides Museum, Montgomery.',a:'A web of cracks overlays the words — violence inscribed on the frame itself.'},
+ {f:'IMG_3802.jpg',t:'Edmund Pettus Bridge',cl:'Selma',c:'The bridge’s arch and name at night.',x:'Selma — site of “Bloody Sunday,” 1965.',a:'Motion blur and streaked headlights make the span feel restless, spectral.'},
+ {f:'IMG_3812.jpg',t:'Enslaved mother (sculpture)',cl:'Montgomery',c:'A bronze of an enslaved mother in chains holding her child.',x:'A memorial to enslavement among Montgomery’s legacy sites.',a:'A low angle and stormy sky heighten anguish; wet ground mirrors the figures.'},
+ {f:'IMG_3813.jpg',t:'Memorial column — Marion County',cl:'Montgomery',c:'A steel monument engraved “Marion County, Alabama / Willis Perkins.”',x:'The National Memorial for Peace and Justice (EJI).',a:'Sharp foreground text against a receding corridor of columns — naming as form.'},
+ {f:'IMG_3819.jpg',t:'“Maceo Snipes”',cl:'Montgomery',c:'A close-up naming victim Maceo Snipes, 07.18.1946.',x:'The EJI memorial — Snipes was killed for voting.',a:'Shallow focus isolates the name; the archive made intimate.'},
+ {f:'IMG_3827.jpg',t:'Hanging monument columns',cl:'Montgomery',c:'Rows of suspended steel columns seen from below.',x:'The EJI memorial’s central space, evoking hanging bodies.',a:'A dizzying upward view; repetition as overwhelming scale.'},
+ {f:'IMG_3828.jpg',t:'“They Are All Honored Here”',cl:'Montgomery',c:'An inscription on weathered wood.',x:'The memorial’s closing statement.',a:'Stark lettering on raw grain; near-monochrome solemnity.'},
+ {f:'IMG_3830.jpg',t:'Bronze walking figures',cl:'Montgomery',c:'Three weathered bronze figures — an elder in a headscarf leading two women.',x:'A memorial sculpture group on themes of endurance and passage.',a:'A low, frontal frame on a wet path; the elder’s face fills the foreground.'},
+ {f:'IMG_3844.jpg',t:'Church interior (pews)',cl:'Montgomery',c:'Rows of pews, pendant lamps, a distant cross and flag.',x:'A historic Black church sanctuary.',a:'One-point perspective draws the eye to the chancel.'},
+ {f:'IMG_3845.jpg',t:'Tilted brick facade',cl:'On the trail',c:'A brick building with balustraded balconies.',x:'A building along the trail.',a:'Rotated 90°, the facade becomes a disorienting abstract pattern.'},
+ {f:'IMG_3847.jpg',t:'State Capitol + footprints',cl:'Montgomery',c:'The Alabama State Capitol beyond painted footprints on the plaza.',x:'The end point of the 1965 Selma-to-Montgomery march.',a:'A worm’s-eye view makes the painted footsteps loom like a marching crowd.'},
+ {f:'IMG_3849.jpg',t:'Dexter Ave. church steps',cl:'Montgomery',c:'The church’s split staircase with visitors.',x:'Dexter Avenue King Memorial Baptist Church, where Dr. King pastored.',a:'Strong white diagonals of the stairs against dark brick.'},
+ {f:'IMG_3851.jpg',t:'“Together We Prevail”',cl:'Montgomery',c:'Stenciled words on a crumbling brick wall.',x:'A civil-rights-themed mural in Montgomery.',a:'High contrast; decayed brick as a metaphor for endurance.'},
+ {f:'IMG_3852.jpg',t:'Night street to Capitol',cl:'Montgomery',c:'Dexter Avenue at night leading to the lit Capitol dome.',x:'Downtown Montgomery after dark.',a:'Deep blacks and scattered bokeh; cinematic emptiness.'},
+ {f:'IMG_3853.jpg',t:'Profile self-portrait',cl:'Montgomery',c:'A person in hat and glasses in profile against the night city.',x:'The photographer places themselves within the trail.',a:'An extreme foreground face against the distant lit Capitol — self as witness.'},
+ {f:'IMG_3858.jpg',t:'Pedestrian tunnel',cl:'On the trail',c:'An empty, lit underpass with benches.',x:'A transit tunnel at night.',a:'One-point symmetry and receding lights; solitude.'},
+ {f:'IMG_3867.jpg',t:'Cobblestone street',cl:'Montgomery',c:'A downtown street paved in cobbles at night.',x:'Montgomery’s older district.',a:'Blown-out high-contrast processing turns the stones into a stark graphic field.'},
+ {f:'IMG_3871.jpg',t:'Rosa Parks statue',cl:'Montgomery',c:'A standing bronze of Rosa Parks in hat and glasses.',x:'Downtown Montgomery, near the bus-boycott sites.',a:'Warm nocturnal light; the figure emerges from a dark street.'},
+ {f:'IMG_3887.jpg',t:'Face to face with Parks',cl:'Montgomery',c:'A visitor sits opposite the Rosa Parks bronze bust.',x:'A museum bench display — a moment of “conversation.”',a:'Two profiles mirrored, living and cast, against a plain wall.'},
+ {f:'IMG_3903.jpg',t:'MLK parsonage (exterior)',cl:'Montgomery',c:'A white clapboard house with porch and chimney.',x:'The Dexter Parsonage where Dr. King lived.',a:'A vignetted sky and glow lend the modest house a charged aura.'},
+ {f:'IMG_3904.jpg',t:'Porch detail “309”',cl:'Montgomery',c:'A porch column, window, and steps marked “309.”',x:'A close study of the parsonage exterior.',a:'Bright, near-white minimalism; strong verticals of rail and column.'},
+ {f:'IMG_3905.jpg',t:'Neighborhood backs',cl:'Montgomery',c:'The rears of houses behind a chain-link fence with a bare tree.',x:'The historic residential block around the parsonage.',a:'Silvered highlights and a dark sky; a stark, wintry graphic.'},
+ {f:'IMG_3906.jpg',t:'“Unity” stone + shoes',cl:'Montgomery',c:'A stone slab engraved “UNITY,” ringed by visitors’ feet.',x:'The Civil Rights Memorial Center plaza.',a:'Overhead framing turns strangers’ shoes into a communal circle.'},
+ {f:'IMG_3907.jpg',t:'“MLK Lived Here”',cl:'Montgomery',c:'The Dexter Parsonage Museum with a family and its sign.',x:'Tourists documenting the King home.',a:'Bright daylight; a pollarded tree anchors the foreground.'},
+ {f:'IMG_3909.jpg',t:'Wooden staircase',cl:'On the trail',c:'A steep wooden staircase inside an old structure.',x:'A historic building interior.',a:'Crossing diagonals and raw timber; chiaroscuro depth.'},
+ {f:'IMG_3913.jpg',t:'Restored city bus (exterior)',cl:'Montgomery',c:'A gleaming 1950s transit bus on a brick street.',x:'The Rosa Parks Museum — emblem of the Bus Boycott.',a:'HDR chrome and a low angle heroize the machine; herringbone pavers lead in.'},
+ {f:'IMG_3916.jpg',t:'Sunlit sidewalk',cl:'Montgomery',c:'A downtown sidewalk raked by bare-tree shadows.',x:'A daytime Montgomery street scene.',a:'Long shadows form a rhythmic pattern across the pavement.'},
+ {f:'IMG_3919.jpg',t:'Sleeping on the street',cl:'Montgomery',c:'A person sleeping against a storefront as pedestrians pass.',x:'Present-day inequality on the same historic streets.',a:'A diagonal shadow splits the frame; the figure sits at the light’s edge.'},
+ {f:'IMG_3921.jpg',t:'Aerial: river & fields',cl:'Departure',c:'A river bending through farmland and a small town.',x:'An airplane-window view arriving in or leaving Alabama.',a:'High-contrast monochrome renders the land as a map-like patchwork.'},
+ {f:'IMG_3924.jpg',t:'Aerial: forests & suburbs',cl:'Departure',c:'Wooded suburbs seen from altitude through haze.',x:'The flight bookending the trip.',a:'Bright, misty high-key tones flatten the terrain to soft texture.'},
+ {f:'IMG_4047.jpg',t:'Restored bus (interior)',cl:'Montgomery',c:'Empty bus seats beneath a historical photo frieze.',x:'Inside the Rosa Parks Museum bus — where refusal happened.',a:'A wide angle exaggerates the aisle; the empty seat invites projection.'}
+];
+const galIndex = Object.fromEntries(GALLERY.map((g,i)=>[g.f,i]));
+
+P.gallery = {special:true};
+function renderGallery(){
+  return `
+  <h3>Workspace · The Full Archive</h3>
+  <h2>All 50 photographs</h2>
+  <p>Every image the machine analyzed, each read three ways. <strong>Concept</strong> = what it literally is · <strong class="ctxword">Context</strong> = where, when, and why it was made · <strong class="absword">Abstraction</strong> = how light, framing, and editing transform it. Click any photo for the full breakdown.</p>
+  <div class="grid">
+    ${GALLERY.map(g=>`<button class="gcard" onclick="go('g_${g.f}')">
+       <img loading="lazy" src="${IMGBASE}${g.f}" alt="${g.t}">
+       <div class="lab">${g.t}</div></button>`).join('')}
+  </div>
+  <div class="choices"><button class="choice" onclick="go('archive')"><span class="arrow">←</span>Back to the interpreted archive (7 key images)</button></div>`;
+}
+function renderGalleryDetail(file){
+  const g = GALLERY[galIndex[file]];
+  if(!g) return renderGallery();
+  const i = galIndex[file];
+  const prev = GALLERY[(i-1+GALLERY.length)%GALLERY.length];
+  const next = GALLERY[(i+1)%GALLERY.length];
+  const anchored = document.querySelector;
+  const anchorMap = {'IMG_3722.jpg':'image_church','IMG_3819.jpg':'image_memorial','IMG_3812.jpg':'image_mother','IMG_3913.jpg':'image_bus','IMG_3887.jpg':'image_selfie','IMG_3557.jpg':'image_beluga','IMG_3919.jpg':'image_sidewalk'};
+  return `
+  <h3>Photograph · ${i+1} of ${GALLERY.length}</h3>
+  <h2>${g.t}</h2>
+  <div class="tagrow"><span class="tag">${g.cl}</span><span class="tag">${g.f}</span></div>
+  <figure class="photo"><img src="${IMGBASE}${g.f}" alt="${g.t}"><figcaption>${g.f}</figcaption></figure>
+  <div class="cca">
+    <div class="cell"><div class="k">Concept — what it is</div><div class="v">${g.c}</div></div>
+    <div class="cell"><div class="k ctx">Context — where / when / why</div><div class="v">${g.x}</div></div>
+    <div class="cell"><div class="k abs">Abstraction — how it is rendered</div><div class="v">${g.a}</div></div>
+  </div>
+  ${anchorMap[g.f]?`<div class="plate prompt"><span class="cap">This image anchors a lens in the story</span><p style="margin-bottom:0"><button class="inlink" onclick="go('${anchorMap[g.f]}')">Open its interpretive passage →</button></p></div>`:''}
+  <div class="choices" style="margin-top:22px">
+    <button class="choice" onclick="go('g_${prev.f}')"><span class="arrow">←</span>Previous: ${prev.t}</button>
+    <button class="choice" onclick="go('g_${next.f}')"><span class="arrow">→</span>Next: ${next.t}</button>
+    <button class="choice" onclick="go('gallery')"><span class="arrow">▦</span>Back to the full grid</button>
+  </div>`;
+}
 
 /* ============================================================
    FIELD NOTES
@@ -622,6 +795,8 @@ function go(id){
   if(id==='notes'){stage.innerHTML=renderNotes();return;}
   if(id==='builder'){stage.innerHTML=renderBuilder();return;}
   if(id==='argue'){stage.innerHTML=renderArgue();return;}
+  if(id==='gallery'){stage.innerHTML=renderGallery();return;}
+  if(id.startsWith('g_')){stage.innerHTML=renderGalleryDetail(id.slice(2));return;}
 
   // built-in narrative passage
   if(P[id] && !P[id].special){
